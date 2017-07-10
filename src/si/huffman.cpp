@@ -79,7 +79,7 @@ static Glib::ustring &fail(Glib::ustring reason, Glib::ustring &output,
     return output;
 }
 
-Glib::ustring hdvb_huffman_decode(const guint8 *input, gsize input_len,
+Glib::ustring huffman_decode(const guint8 *input, gsize input_len,
         HuffmanNode **o1table)
 {
     guint8 token;

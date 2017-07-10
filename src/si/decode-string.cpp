@@ -20,6 +20,10 @@
 #include <glibmm.h>
 
 #include "decode-string.h"
+#include "huffman.h"
+
+namespace logi
+{
 
 Glib::ustring iso8859_n(int n)
 {
@@ -35,7 +39,16 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
 
     if (!len)
         return "NULL string";
-    if (vec[offset] == 0 || vec[0] >= 0x20)
+    if (vec[offset] == 0x1f)
+    {
+        if (vec[offset + 1] == 1)
+            return huffman_decode(vec.data() + offset, len, huffman_table1);
+        else if (vec[offset + 1] == 2)
+            return huffman_decode(vec.data() + offset, len, huffman_table2);
+        else
+            return "Invalid Huffman table number";
+    }
+    else if (vec[offset] == 0 || vec[0] >= 0x20)
     {
         unsigned n;
 
@@ -142,4 +155,6 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
         return Glib::ustring(dec2.begin(), dec2.end());
     }
     return decoded;
+}
+
 }
