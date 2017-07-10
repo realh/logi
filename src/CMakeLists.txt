@@ -7,6 +7,9 @@ set(LOGI_CORE_SOURCES
     section-filter.cpp
     tuning.cpp
     si/decode-string.cpp
+    si/huffman.cpp
+    si/huffman-table1.cpp
+    si/huffman-table2.cpp
     si/nit-section.cpp
     si/section.cpp
     si/section-data.cpp
@@ -20,6 +23,7 @@ set(LOGI_CORE_HEADERS
     tuning.h
     si/decode-string.h
     si/descriptor.h
+    si/huffman.h
     si/network-name-descriptor.h
     si/nit-section.h
     si/section.h
@@ -27,6 +31,20 @@ set(LOGI_CORE_HEADERS
     si/table-tracker.h
     si/ts-data.h
 )
+
+add_custom_command(OUTPUT si/huffman-table1.cpp
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/si/huff2c.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/si/freesat.t1 si/huffman-table1.cpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/si/huff2c.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/si/freesat.t1
+    WORKING_DIRECTORY ${CMAKE_CURRENT_DIR})
+
+add_custom_command(OUTPUT si/huffman-table2.cpp
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/si/huff2c.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/si/freesat.t2 si/huffman-table2.cpp
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/si/huff2c.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/si/freesat.t2
+    WORKING_DIRECTORY ${CMAKE_CURRENT_DIR})
 
 add_library(logicore STATIC ${LOGI_CORE_SOURCES})
 target_compile_options(logicore PUBLIC ${GLIB_CFLAGS})
