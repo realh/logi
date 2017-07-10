@@ -17,3 +17,4 @@ set(LOGI_SCAN_HEADERS
 
 add_library(logiscan STATIC ${LOGI_SCAN_SOURCES})
 target_compile_options(logiscan PUBLIC ${GLIB_CFLAGS})
+target_link_libraries(logiscan logicore)

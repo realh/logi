@@ -25,8 +25,6 @@
 namespace logi
 {
 
-static const char *HUFFMAN_FAIL_STRING = " --FAIL: ";
-
 struct HuffmanNode {
     guint8 left, right;
 } ;
@@ -36,5 +34,11 @@ extern HuffmanNode *huffman_table2[];
 
 Glib::ustring huffman_decode(const guint8 *input, gsize input_len,
         HuffmanNode **o1table);
+
+inline Glib::ustring huffman_decode(const std::vector<guint8> &input,
+        gsize input_len, HuffmanNode **o1table)
+{
+    return huffman_decode(input.data(), input_len, o1table);
+}
 
 }

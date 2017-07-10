@@ -34,7 +34,7 @@ namespace logi
  *          (including any leading control code).
  * @len: Length of SI-encoded string (including above control code).
  */
-Glib::ustring decode_string(std::vector<std::uint8_t> vec,
+Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
         unsigned offset, unsigned len);
 
 }

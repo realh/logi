@@ -27,6 +27,8 @@
     where INFILE is freesat.t1/.t2. C++ variable name is derived from this.
 """
 
+import errno
+import os
 import sys
 
 START_TOK = 0
@@ -135,7 +137,7 @@ def generate_file(trees, oot):
     " oot = 1 or 2 "
     s = """/* This file was auto-generated for logi by huff2c.py */
 
-#include "huffman.h"
+#include "si/huffman.h"
 
 namespace logi
 {
@@ -191,5 +193,13 @@ def save_file(filename, body):
 filename = sys.argv[1]
 trees = load_file(filename)
 body = generate_file(trees, filename[-1])
+path = os.path.dirname(sys.argv[2])
+try:
+    os.makedirs(path)
+except OSError as exc:
+    if exc.errno == errno.EEXIST and os.path.isdir(path):
+        pass
+    else:
+        raise
 save_file(sys.argv[2], body)
 

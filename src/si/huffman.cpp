@@ -26,6 +26,8 @@
 namespace logi
 {
 
+static const char *HUFFMAN_FAIL_STRING = " --FAIL: ";
+
 static const guchar START_TOKEN = 0;
 static const guchar STOP_TOKEN = 0;
 static const guchar ESC_TOKEN = 1;
