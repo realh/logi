@@ -13,6 +13,7 @@ set(LOGI_CORE_SOURCES
     si/nit-section.cpp
     si/section.cpp
     si/section-data.cpp
+    si/service-list-descriptor.cpp
     si/table-tracker.cpp
 )
 
@@ -28,6 +29,7 @@ set(LOGI_CORE_HEADERS
     si/nit-section.h
     si/section.h
     si/section-data.h
+    si/service-list-descriptor.h
     si/table-tracker.h
     si/ts-data.h
 )

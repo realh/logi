@@ -21,6 +21,7 @@
 
 #include "nit-processor.h"
 #include "si/network-name-descriptor.h"
+#include "si/service-list-descriptor.h"
 #include "si/ts-data.h"
 
 namespace logi
@@ -37,7 +38,7 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec)
             return false;
         case TableTracker::REPEAT_COMPLETE:
             g_print("Repeat and complete (%d)\n", sec->section_number());
-            return false;
+            return true;
         case TableTracker::COMPLETE:
             complete = true;
         case TableTracker::OK:
@@ -59,13 +60,14 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec)
 
     g_print("Network descriptors (len %d):\n  ",
             sec->network_descriptors_length());
-    for (auto &desc: sec->get_network_descriptors())
+    auto descs = sec->get_network_descriptors();
+    for (auto &desc: descs)
     {
         g_print("0x%02x+%d  ", desc.tag(), desc.length());
-        if (desc.tag() == Descriptor::NETWORK_NAME && !network_name_.size())
-        {
-            network_name_ = NetworkNameDescriptor(desc).get_network_name();
-        }
+    }
+    for (auto &desc: descs)
+    {
+        process_descriptor(desc);
     }
     g_print("\n");
     if (network_name_.size())
@@ -85,15 +87,46 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec)
                 ts.transport_stream_id(), ts.original_network_id());
         g_print("  Transport descriptors (len %d):\n    ",
                 ts.transport_descriptors_length());
-        for (auto &desc: ts.get_transport_descriptors())
+        descs = ts.get_transport_descriptors();
+        for (auto &desc: descs)
         {
             g_print("0x%02x+%d  ", desc.tag(), desc.length());
+        }
+        for (auto &desc: descs)
+        {
+            process_descriptor(desc);
         }
         g_print("\n\n");
     }
     g_print("\n\n");
 
     return complete;
+}
+
+void NITProcessor::process_descriptor(const Descriptor &desc)
+{
+    switch (desc.tag())
+    {
+        case Descriptor::NETWORK_NAME:
+            if (!network_name_.size())
+            {
+                network_name_ = NetworkNameDescriptor(desc).get_network_name();
+            }
+            break;
+        case Descriptor::SERVICE_LIST:
+            process_service_list_descriptor(desc);
+            break;
+    }
+}
+
+void NITProcessor::process_service_list_descriptor(const Descriptor &desc)
+{
+    ServiceListDescriptor sd(desc);
+    g_print("    Services:\n");
+    for (const auto &s: sd.get_services())
+    {
+        g_print("      id %04x type %02x\n", s.service_id(), s.service_type());
+    }
 }
 
 }

@@ -1,8 +1,6 @@
-#pragma once
-
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,35 +17,20 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <memory>
-
-#include <glibmm/ustring.h>
-
-#include "si/nit-section.h"
-#include "si/table-tracker.h"
+#include "service-list-descriptor.h"
 
 namespace logi
 {
 
-/**
- * NITProcessor:
- * Builds up information from NIT sections.
- */
-class NITProcessor
+std::vector<ServiceListDescriptor::ServiceInfo>
+ServiceListDescriptor::get_services() const
 {
-private:
-    TableTracker tracker_;
-    Glib::ustring network_name_;
-public:
-    /**
-     * process:
-     * Returns: true if a complete table has been received.
-     */
-    bool process(std::shared_ptr<NITSection> sec);
-protected:
-    virtual void process_descriptor(const Descriptor &desc);
-
-    virtual void process_service_list_descriptor(const Descriptor &desc);
-};
+    std::vector<ServiceInfo> svcs;
+    for (unsigned n = 0; n < get_services_length(); ++n)
+    {
+        svcs.emplace_back(*this, n + 2);
+    }
+    return svcs;
+}
 
 }

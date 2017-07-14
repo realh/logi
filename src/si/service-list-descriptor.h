@@ -2,7 +2,7 @@
 
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,35 +19,35 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <memory>
-
-#include <glibmm/ustring.h>
-
-#include "si/nit-section.h"
-#include "si/table-tracker.h"
+#include "decode-string.h"
+#include "descriptor.h"
+#include "section-data.h"
 
 namespace logi
 {
 
-/**
- * NITProcessor:
- * Builds up information from NIT sections.
- */
-class NITProcessor
+class ServiceListDescriptor : public Descriptor
 {
-private:
-    TableTracker tracker_;
-    Glib::ustring network_name_;
 public:
-    /**
-     * process:
-     * Returns: true if a complete table has been received.
-     */
-    bool process(std::shared_ptr<NITSection> sec);
-protected:
-    virtual void process_descriptor(const Descriptor &desc);
 
-    virtual void process_service_list_descriptor(const Descriptor &desc);
+    class ServiceInfo : public SectionData
+    {
+    public:
+        ServiceInfo(const Descriptor &source, unsigned offset) :
+            SectionData(source.get_data(), source.get_offset() + offset)
+        {}
+
+        std::uint16_t service_id() const { return word16(0); }
+
+        std::uint8_t service_type() const { return word8(2); }
+    };
+
+    ServiceListDescriptor(const Descriptor &source) : Descriptor(source)
+    {}
+
+    std::uint8_t get_services_length() const { return length(); }
+
+    std::vector<ServiceInfo> get_services() const;
 };
 
 }
