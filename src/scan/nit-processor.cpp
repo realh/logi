@@ -83,24 +83,29 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec)
         //        ts.transport_descriptors_length());
         //g_print("  from parent section %d\n",
         //        sec->word12(ts.get_offset() + 4));
-        g_print("  transport_stream_id: %d,\toriginal_network_id %d\n",
-                ts.transport_stream_id(), ts.original_network_id());
-        g_print("  Transport descriptors (len %d):\n    ",
-                ts.transport_descriptors_length());
-        descs = ts.get_transport_descriptors();
-        for (auto &desc: descs)
-        {
-            g_print("0x%02x+%d  ", desc.tag(), desc.length());
-        }
-        for (auto &desc: descs)
-        {
-            process_descriptor(desc);
-        }
-        g_print("\n\n");
+        process_ts_data(ts);
     }
     g_print("\n\n");
 
     return complete;
+}
+
+void NITProcessor::process_ts_data(const TSSectionData &ts)
+{
+    g_print("  transport_stream_id: %d,\toriginal_network_id %d\n",
+            ts.transport_stream_id(), ts.original_network_id());
+    g_print("  Transport descriptors (len %d):\n    ",
+            ts.transport_descriptors_length());
+    auto descs = ts.get_transport_descriptors();
+    for (auto &desc: descs)
+    {
+        g_print("0x%02x+%d  ", desc.tag(), desc.length());
+    }
+    for (auto &desc: descs)
+    {
+        process_descriptor(desc);
+    }
+    g_print("\n\n");
 }
 
 void NITProcessor::process_descriptor(const Descriptor &desc)

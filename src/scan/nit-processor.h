@@ -45,6 +45,8 @@ public:
      */
     bool process(std::shared_ptr<NITSection> sec);
 protected:
+    virtual void process_ts_data(const TSSectionData &ts);
+
     virtual void process_descriptor(const Descriptor &desc);
 
     virtual void process_service_list_descriptor(const Descriptor &desc);
