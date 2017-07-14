@@ -2,7 +2,7 @@
 
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2016-2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -39,10 +39,11 @@ private:
 public:
     enum Result
     {
-        OK,             /// This is a new section.
-        COMPLETE,       /// Table is complete.
-        REPEAT,         /// Already have this section.
-        OLD_VERSION,    /// This section's version number is obsolete.
+        OK,                 /// This is a new section.
+        COMPLETE,           /// This section completes the table.
+        REPEAT,             /// Already have this section.
+        REPEAT_COMPLETE,    /// Table was already complete.
+        OLD_VERSION,        /// This section's version number is obsolete.
     };
 
     TableTracker() : version_number_(-1) {}

@@ -2,7 +2,7 @@
 
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2016-2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -34,11 +34,12 @@ public:
      * Defaults are for UK (Freeview).
      * @first_f:    First frequency.
      * @last_f:     Last frequency.
+     * FIXME: last_f should be 67, 37 is to make testing quicker.
      * @step:       Gap between frequencies.
      * @bandwidth:  Bandwidth (default is same as step).
      */
     DvbtTuningIterator(guint32 first_f = (21 * 8 + 306) * 1000000,
-            guint32 last_f = (67 * 8 + 306) * 1000000, guint32 step = 8000000,
+            guint32 last_f = (37 * 8 + 306) * 1000000, guint32 step = 8000000,
             guint32 bandwidth = 0);
 
     // Default copy/move are OK

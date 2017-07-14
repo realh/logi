@@ -32,8 +32,7 @@ fp.close()
 
 os.unlink(output)
 subprocess.call("/usr/bin/pkg-config --cflags " +
-        "glibmm-2.4 gthread-2.0 gobject-2.0>=2.44 " +
-        "gudev-1.0 " +
+        "glibmm-2.4 gthread-2.0 gobject-2.0 gudev-1.0 " +
         "> " + output,
         shell = True)
 fp = open(output, 'r')

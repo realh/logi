@@ -1,6 +1,6 @@
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2016-2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -34,6 +34,9 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec)
     {
         case TableTracker::REPEAT:
             g_print("Repeat NIT section number %d\n", sec->section_number());
+            return false;
+        case TableTracker::REPEAT_COMPLETE:
+            g_print("Repeat and complete (%d)\n", sec->section_number());
             return false;
         case TableTracker::COMPLETE:
             complete = true;

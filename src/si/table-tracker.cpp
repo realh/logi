@@ -1,6 +1,6 @@
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2016-2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -54,8 +54,9 @@ TableTracker::Result TableTracker::track(const Section &sec)
     if (l != table_.size())
         table_.resize(l);
 
+    // If already complete before adding this section this must be a repeat
     if (complete_)
-        return COMPLETE;
+        return REPEAT_COMPLETE;
 
     Result result;
 
