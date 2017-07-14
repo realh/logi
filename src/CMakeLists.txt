@@ -7,6 +7,7 @@ set(LOGI_CORE_SOURCES
     section-filter.cpp
     tuning.cpp
     si/decode-string.cpp
+    si/delsys-descriptor.cpp
     si/huffman.cpp
     si/huffman-table1.cpp
     si/huffman-table2.cpp
@@ -15,6 +16,7 @@ set(LOGI_CORE_SOURCES
     si/section-data.cpp
     si/service-list-descriptor.cpp
     si/table-tracker.cpp
+    si/terr-delsys-descriptor.cpp
 )
 
 set(LOGI_CORE_HEADERS
@@ -23,6 +25,7 @@ set(LOGI_CORE_HEADERS
     section-filter.h
     tuning.h
     si/decode-string.h
+    si/delsys-descriptor.h
     si/descriptor.h
     si/huffman.h
     si/network-name-descriptor.h
@@ -31,6 +34,7 @@ set(LOGI_CORE_HEADERS
     si/section-data.h
     si/service-list-descriptor.h
     si/table-tracker.h
+    si/terr-delsys-descriptor.h
     si/ts-data.h
 )
 
