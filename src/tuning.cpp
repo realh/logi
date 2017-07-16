@@ -63,9 +63,9 @@ TuningProperties::TuningProperties(const char *s)
 }
 
 TuningProperties::TuningProperties(
-        std::initializer_list<std::pair<guint32, guint32> > props)
+        std::initializer_list<std::pair<guint32, guint32> >&&props)
 {
-    for (auto &prop: props)
+    for (const auto &prop: props)
     {
         append_prop(prop.first, prop.second);
     }

@@ -17,7 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <utility>
+
 #include "terr-delsys-descriptor.h"
+
+#include "tuning.h"
 
 namespace logi
 {
@@ -81,6 +85,22 @@ TerrestrialDeliverySystemDescriptor::transmission_mode() const
             return TRANSMISSION_MODE_4K;
     }
     return TRANSMISSION_MODE_AUTO;
+}
+
+TuningProperties *
+TerrestrialDeliverySystemDescriptor::get_tuning_properties() const
+{
+    return new TuningProperties({
+        { DTV_DELIVERY_SYSTEM, SYS_DVBT },
+        { DTV_FREQUENCY, centre_frequency()},
+        { DTV_BANDWIDTH_HZ, bandwidth() },
+        { DTV_MODULATION, constellation() },
+        { DTV_HIERARCHY, hierarchy() },
+        { DTV_CODE_RATE_HP, code_rate_hp() },
+        { DTV_CODE_RATE_LP, code_rate_lp() },
+        { DTV_GUARD_INTERVAL, guard_interval() },
+        { DTV_TRANSMISSION_MODE, transmission_mode() },
+    });
 }
 
 }

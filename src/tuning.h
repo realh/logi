@@ -21,7 +21,6 @@
 
 #include <initializer_list>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <linux/dvb/frontend.h>
@@ -51,12 +50,12 @@ public:
 
     /**
      * TuningProperties:
+     * @T: Iterable container of std::pair<guint32, guint32>.
      * @props: A list of {cmd, data} properties.
      */
-    TuningProperties(std::initializer_list<std::pair<guint32, guint32> > props);
+    TuningProperties(std::initializer_list<std::pair<guint32,guint32>> &&props);
 
     /**
-     * TuningProperties:
      * @tuning_str: In the format used by other Linux DVB tools.
      */
     TuningProperties(const char *tuning_str);

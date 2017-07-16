@@ -36,6 +36,9 @@ public:
     static fe_bandwidth_t bandwidth(std::uint8_t b);
 
     static fe_code_rate_t code_rate(std::uint8_t r);
+
+    /// Result is heap-allocated
+    virtual class TuningProperties *get_tuning_properties() const;
 };
 
 }

@@ -63,6 +63,9 @@ public:
     fe_transmit_mode_t transmission_mode() const;
 
     bool other_frequency() const { return (word8(8) & 1) != 0; }
+
+    /// Result is heap-allocated
+    virtual class TuningProperties *get_tuning_properties() const override;
 };
 
 }
