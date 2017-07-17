@@ -20,6 +20,9 @@
 #include "channel-scanner.h"
 #include "multi-scanner.h"
 
+#include "si/service-list-descriptor.h"
+#include "si/terr-delsys-descriptor.h"
+
 namespace logi
 {
 
@@ -109,6 +112,41 @@ void MultiScanner::nolock_cb()
 {
     g_print("No lock\n");
     next();
+}
+
+TransportStreamData &
+MultiScanner::get_transport_stream_data(std::uint16_t ts_id)
+{
+    auto &tsdat = ts_data_[ts_id];
+    tsdat.set_transport_stream_id(ts_id);
+    return tsdat;
+}
+
+
+void MultiScanner::process_service_list_descriptor(std::uint16_t ts_id,
+        const Descriptor &desc)
+{
+    ServiceListDescriptor sd(desc);
+    g_print("    Services:\n");
+    for (const auto &s: sd.get_services())
+    {
+        g_print("      id %04x type %02x\n", s.service_id(), s.service_type());
+    }
+    auto &tsdat = get_transport_stream_data(ts_id);
+    for (const auto &s: sd.get_services())
+    {
+        tsdat.add_service_id(s.service_id());
+    }
+}
+
+void MultiScanner::process_delivery_system_descriptor(std::uint16_t ts_id,
+        const Descriptor &desc)
+{
+    // FIXME: Also need to support satellite later
+    TerrestrialDeliverySystemDescriptor d(desc);
+    auto &tsdat = get_transport_stream_data(ts_id);
+    tsdat.set_tuning(d.get_tuning_properties());
+    g_print("    TS %d: %s\n", ts_id, tsdat.get_tuning()->describe().c_str());
 }
 
 }

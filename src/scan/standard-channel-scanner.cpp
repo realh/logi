@@ -83,7 +83,7 @@ void StandardChannelScanner::nit_filter_cb(int reason,
     else if (nd)
     {
         nit_error_ = false;
-        nd->nit_complete = nd->nit_proc.process(section);
+        nd->nit_complete = nd->nit_proc.process(section, multi_scanner_);
     }
 
     if (!section || all_complete_or_error())

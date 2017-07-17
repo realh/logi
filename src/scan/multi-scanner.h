@@ -19,8 +19,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <map>
+
 #include "receiver.h"
+
+#include "scan-data.h"
 #include "tuning-iterator.h"
+
+#include "si/descriptor.h"
 
 namespace logi
 {
@@ -48,6 +54,8 @@ private:
     sigc::signal<void, Status> finished_signal_;
     sigc::connection lock_conn_, nolock_conn_;
     bool finished_;
+
+    std::map<std::uint16_t, TransportStreamData> ts_data_;
 public:
     MultiScanner(std::shared_ptr<Receiver> rcv,
             std::shared_ptr<ChannelScanner> channel_scanner,
@@ -85,6 +93,15 @@ public:
     {
         return rcv_->get_frontend();
     }
+
+    /// Returns either a new TransportStreamData or an existing one
+    TransportStreamData &get_transport_stream_data(std::uint16_t ts_id);
+
+    void process_service_list_descriptor(std::uint16_t ts_id,
+            const Descriptor &desc);
+
+    void process_delivery_system_descriptor(std::uint16_t ts_id,
+            const Descriptor &desc);
 
     friend ChannelScanner;
 private:

@@ -29,6 +29,8 @@
 namespace logi
 {
 
+class MultiScanner;
+
 /**
  * NITProcessor:
  * Builds up information from NIT sections.
@@ -38,18 +40,18 @@ class NITProcessor
 private:
     TableTracker tracker_;
     Glib::ustring network_name_;
+    MultiScanner *mscanner_;
+    std::uint16_t current_ts_id_;
 public:
     /**
      * process:
      * Returns: true if a complete table has been received.
      */
-    bool process(std::shared_ptr<NITSection> sec);
+    bool process(std::shared_ptr<NITSection> sec, MultiScanner *ms);
 protected:
     virtual void process_ts_data(const TSSectionData &ts);
 
     virtual void process_descriptor(const Descriptor &desc);
-
-    virtual void process_service_list_descriptor(const Descriptor &desc);
 };
 
 }

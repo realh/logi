@@ -38,7 +38,7 @@ public:
     static fe_code_rate_t code_rate(std::uint8_t r);
 
     /// Result is heap-allocated
-    virtual class TuningProperties *get_tuning_properties() const;
+    virtual class TuningProperties *get_tuning_properties() const = 0;
 };
 
 }

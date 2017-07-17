@@ -39,6 +39,11 @@ public:
     {}
 
     /**
+     * Some subclasses require polymorphism.
+     */
+    virtual ~Descriptor() = default;
+
+    /**
      * Descriptor(const Descriptor &):
      * This is intended to be used to create a specific typed descriptor from a
      * generic one rather than as a copy constructor.

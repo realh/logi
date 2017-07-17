@@ -19,7 +19,9 @@
 
 #include <glib.h>
 
+#include "multi-scanner.h"
 #include "nit-processor.h"
+
 #include "si/network-name-descriptor.h"
 #include "si/service-list-descriptor.h"
 #include "si/ts-data.h"
@@ -27,9 +29,11 @@
 namespace logi
 {
 
-bool NITProcessor::process(std::shared_ptr<NITSection> sec)
+bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
 {
     bool complete = false;
+
+    mscanner_ = ms;
 
     switch (tracker_.track(*sec))
     {
@@ -65,6 +69,7 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec)
     {
         g_print("0x%02x+%d  ", desc.tag(), desc.length());
     }
+    g_print("\n");
     for (auto &desc: descs)
     {
         process_descriptor(desc);
@@ -96,11 +101,13 @@ void NITProcessor::process_ts_data(const TSSectionData &ts)
             ts.transport_stream_id(), ts.original_network_id());
     g_print("  Transport descriptors (len %d):\n    ",
             ts.transport_descriptors_length());
+    current_ts_id_ = ts.transport_stream_id();
     auto descs = ts.get_transport_descriptors();
     for (auto &desc: descs)
     {
         g_print("0x%02x+%d  ", desc.tag(), desc.length());
     }
+    g_print("\n");
     for (auto &desc: descs)
     {
         process_descriptor(desc);
@@ -119,18 +126,11 @@ void NITProcessor::process_descriptor(const Descriptor &desc)
             }
             break;
         case Descriptor::SERVICE_LIST:
-            process_service_list_descriptor(desc);
+            mscanner_->process_service_list_descriptor(current_ts_id_, desc);
             break;
-    }
-}
-
-void NITProcessor::process_service_list_descriptor(const Descriptor &desc)
-{
-    ServiceListDescriptor sd(desc);
-    g_print("    Services:\n");
-    for (const auto &s: sd.get_services())
-    {
-        g_print("      id %04x type %02x\n", s.service_id(), s.service_type());
+        case Descriptor::TERRESTRIAL_DELIVERY_SYSTEM:
+            mscanner_->process_delivery_system_descriptor(current_ts_id_, desc);
+            break;
     }
 }
 
