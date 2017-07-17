@@ -32,7 +32,7 @@ public:
     {}
 
     /// Result is in Hz
-    std::uint32_t centre_frequency() const { return bcd32(2) * 10; }
+    std::uint32_t centre_frequency() const { return word32(2) * 10; }
 
     fe_bandwidth_t bandwidth() const
     {
