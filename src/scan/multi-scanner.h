@@ -56,6 +56,7 @@ private:
     bool finished_;
 
     std::map<std::uint16_t, TransportStreamData> ts_data_;
+    TransportStreamData *current_ts_data_;
 public:
     MultiScanner(std::shared_ptr<Receiver> rcv,
             std::shared_ptr<ChannelScanner> channel_scanner,

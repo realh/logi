@@ -69,7 +69,6 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
     {
         g_print("0x%02x+%d  ", desc.tag(), desc.length());
     }
-    g_print("\n");
     for (auto &desc: descs)
     {
         process_descriptor(desc);
@@ -90,7 +89,7 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
         //        sec->word12(ts.get_offset() + 4));
         process_ts_data(ts);
     }
-    g_print("\n\n");
+    g_print("\n");
 
     return complete;
 }

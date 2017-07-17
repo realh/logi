@@ -17,6 +17,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <algorithm>
+
 #include "channel-scanner.h"
 #include "multi-scanner.h"
 
@@ -62,6 +64,12 @@ void MultiScanner::cancel()
 
 void MultiScanner::channel_finished(bool success)
 {
+    if (current_ts_data_)
+    {
+        current_ts_data_->set_scan_status(success ?
+                TransportStreamData::SCANNED : TransportStreamData::PENDING);
+    }
+
     bool complete = channel_scanner_->is_complete();
 
     if (complete)
@@ -80,9 +88,50 @@ void MultiScanner::channel_finished(bool success)
 
 void MultiScanner::next()
 {
+    /*
+    g_print("NEXT\n");
+    for (const auto &tspair: ts_data_)
+    {
+        const auto &tsdat = tspair.second;
+        auto props = tsdat.get_tuning();
+        g_print("  id %d/%d, desc %s, status %d\n",
+                tspair.first, tsdat.get_transport_stream_id(),
+                props ? props->describe().c_str() : "null",
+                tsdat.get_scan_status());
+    }
+    */
+
     while (true)
     {
-        auto props = iter_->next();
+        std::shared_ptr<TuningProperties> props = nullptr;
+
+        // First look for any discovered (in NIT) transports that haven't been
+        // scanned yet.
+        current_ts_data_ = nullptr;
+        for (auto &tsdat: ts_data_)
+        {
+            if (tsdat.second.get_scan_status() == TransportStreamData::PENDING
+                    && (props = tsdat.second.get_tuning()) != nullptr)
+            {
+                current_ts_data_ = &tsdat.second;
+                break;
+            }
+        }
+
+        // If there's nothing to be scanned in NIT go through the iterator.
+        // This loops skips those from iterator which have been discovered.
+        if (!props)
+        {
+            do
+            {
+                props = iter_->next();
+            } while (props && std::find_if(ts_data_.begin(), ts_data_.end(),
+                [&props](const std::pair<std::uint16_t, TransportStreamData> &t)
+                {
+                    auto tuning = t.second.get_tuning();
+                    return tuning && *tuning == *props;
+                }) != ts_data_.end());
+        }
         if (!props)
         {
             cancel();
@@ -110,6 +159,8 @@ void MultiScanner::lock_cb()
 
 void MultiScanner::nolock_cb()
 {
+    if (current_ts_data_)
+        current_ts_data_->set_scan_status(TransportStreamData::FAILED);
     g_print("No lock\n");
     next();
 }
@@ -119,6 +170,7 @@ MultiScanner::get_transport_stream_data(std::uint16_t ts_id)
 {
     auto &tsdat = ts_data_[ts_id];
     tsdat.set_transport_stream_id(ts_id);
+    current_ts_data_ = &tsdat;
     return tsdat;
 }
 
@@ -127,13 +179,17 @@ void MultiScanner::process_service_list_descriptor(std::uint16_t ts_id,
         const Descriptor &desc)
 {
     ServiceListDescriptor sd(desc);
+    /*
     g_print("    Services:\n");
     for (const auto &s: sd.get_services())
     {
         g_print("      id %04x type %02x\n", s.service_id(), s.service_type());
     }
+    */
     auto &tsdat = get_transport_stream_data(ts_id);
-    for (const auto &s: sd.get_services())
+    const auto &svcs = sd.get_services();
+    g_print("    %ld services\n", svcs.size());
+    for (const auto &s: svcs)
     {
         tsdat.add_service_id(s.service_id());
     }

@@ -19,6 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <memory>
 #include <set>
 
 #include "tuning.h"
@@ -29,17 +30,20 @@ namespace logi
 class TransportStreamData
 {
 public:
+    enum ScanStatus
+    {
+        PENDING,
+        SCANNED,
+        FAILED
+    };
+
     TransportStreamData(std::uint16_t transport_stream_id = 0,
             std::uint16_t network_id = 0,
-            TuningProperties *tuning = nullptr) :
+            std::shared_ptr<TuningProperties> tuning = nullptr) :
         transport_stream_id_(transport_stream_id),
-        network_id_(network_id), tuning_(tuning)
+        network_id_(network_id), tuning_(tuning),
+        scan_status_(PENDING)
     {}
-
-    ~TransportStreamData()
-    {
-        delete tuning_;
-    }
 
     void set_transport_stream_id(std::uint16_t transport_stream_id)
     {
@@ -61,16 +65,19 @@ public:
         return network_id_;
     }
 
-    /// Takes ownership of tuning, deletes repeats
     void set_tuning(TuningProperties *tuning)
     {
-        if (tuning_)
-            delete tuning;
-        else
+        if (!tuning_)
+            tuning_ = std::shared_ptr<TuningProperties>(tuning);
+    }
+
+    void set_tuning(std::shared_ptr<TuningProperties> &tuning)
+    {
+        if (!tuning_)
             tuning_ = tuning;
     }
 
-    const TuningProperties *get_tuning() const
+    std::shared_ptr<TuningProperties> get_tuning() const
     {
         return tuning_;
     }
@@ -84,11 +91,22 @@ public:
     {
         return service_ids_;
     }
+
+    void set_scan_status(ScanStatus status)
+    {
+        scan_status_ = status;
+    }
+
+    ScanStatus get_scan_status() const
+    {
+        return scan_status_;
+    }
 private:
     std::uint16_t transport_stream_id_;
     std::uint16_t network_id_;
-    TuningProperties *tuning_;
+    std::shared_ptr<TuningProperties> tuning_;
     std::set<std::uint16_t> service_ids_;
+    ScanStatus scan_status_;
 };
 
 }
