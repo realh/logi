@@ -104,10 +104,10 @@ void MultiScanner::next()
     while (true)
     {
         std::shared_ptr<TuningProperties> props = nullptr;
+        current_ts_data_ = nullptr;
 
         // First look for any discovered (in NIT) transports that haven't been
         // scanned yet.
-        current_ts_data_ = nullptr;
         for (auto &tsdat: ts_data_)
         {
             if (tsdat.second.get_scan_status() == TransportStreamData::PENDING
@@ -132,6 +132,7 @@ void MultiScanner::next()
                     return tuning && *tuning == *props;
                 }) != ts_data_.end());
         }
+
         if (!props)
         {
             cancel();
