@@ -25,6 +25,71 @@
 namespace logi
 {
 
+// Only bottom 16 bits of c are significant, this generates a gunichar from
+// a 16-bit UTF codepoint.
+constexpr static gunichar u(gunichar c)
+{
+    return c >= 0x800 ?
+        (0xe08080 | ((c & 0xf000) << 4) | ((c & 0x0fc0) << 2) | (c & 0x003f))
+        : (c > 0x80 ? 
+        (0xc080 | ((c & 0x07c0) << 2) | (c & 0x003f))
+         : c);
+}
+
+// DVB byte to Unicode codepoint mapping for ETSI EN 300 468 table A1,
+// for 0xa0 - 0xff.
+constexpr static guint16 table[] =
+{
+    0x00a0, 0x00a1, 0x00a2, 0x00a3,     // a0
+    0x20ac, 0x00a5, 0x00a6, 0x00a7,     // a4
+    0x00a4, 0x2018, 0x201c, 0x00ab,     // a8
+    0x2190, 0x2191, 0x2192, 0x2193,     // ac
+
+    0x00b0, 0x00b1, 0x00b2, 0x00b3,     // b0
+    0x00d7, 0x00b5, 0x00b6, 0x00b7,     // b4
+    0x00f7, 0x2019, 0x201d, 0x00bb,     // b8
+    0x00bc, 0x00bd, 0x00be, 0x00bf,     // bf
+
+    // 0xc1 - 0xcf are combining accents, I think these can translate
+    // directly into UTF combining characters
+    0x00c0, 0x0300, 0x0301, 0x0302,     // c0
+    0x0303, 0x0304, 0x0306, 0x0307,     // c4
+    0x0308, 0x00c9, 0x030a, 0x0327,     // c8
+    0x00cc, 0x030b, 0x0328, 0x030c,     // cc
+
+    0x2014, 0x00b9, 0x00ae, 0x00a9,     // d0
+    0x2122, 0x266a, 0x00ac, 0x00a6,     // d4
+    0x00d8, 0x00d9, 0x00da, 0x00db,     // d8
+    0x215b, 0x215c, 0x215d, 0x215e,     // dc
+
+    0x2126, 0x00c6, 0x0110, 0x00aa,     // e0
+    0x0126, 0x00e5, 0x0132, 0x013f,     // e4
+    0x0141, 0x00d8, 0x0152, 0x00ba,     // e8
+    0x00de, 0x0166, 0x014a, 0x0149,     // ec
+
+    0x0138, 0x00e6, 0x0111, 0x00f0,     // f0
+    0x0127, 0x0131, 0x0133, 0x0140,     // f4
+    0x0142, 0x00f8, 0x0153, 0x00df,     // f8
+    0x00fe, 0x0167, 0x014b, 0x00ad,     // fc
+};
+
+static Glib::ustring decode_latin(std::vector<std::uint8_t> v,
+        unsigned o, unsigned l)
+{
+    Glib::ustring s;
+    for (auto i = o; i < o + l; ++i)
+    {
+        auto c = v[i];
+        if (c < 0x80)
+            s.push_back(char (c));
+        else if (c >= 0x80 && c <= 0x9f)        // Control codes
+            s.push_back(gunichar(0xc200 + c));
+        else 
+            s.push_back(u(table[c - 0xa0]));
+    }
+    return s;
+}
+
 Glib::ustring iso8859_n(int n)
 {
     return Glib::ustring::compose("ISO_8859-%1", n);
@@ -48,29 +113,9 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
         else
             return "Invalid Huffman table number";
     }
-    else if (vec[offset] == 0 || vec[0] >= 0x20)
+    else if (vec[offset] >= 0x20)
     {
-        unsigned n;
-
-        from_enc = "ISO_6937-2";
-        /* DVB adds 0xA4 = Euro symbol to the standard. If we left this
-         * unchanged, at best g_convert would convert it to the UTF-8 encoding
-         * of the currency symbol which is a separate valid character in 6937.
-         * So let's replace 0xA4 with 0x90 which should translate to a unique
-         * "user-defined" code in UTF-8, which we can convert to Euro after.
-         */
-        for (n = 0; n < len; ++n)
-        {
-            if (vec[n + offset] == 0xa4)
-            {
-                if (!tmp.size())
-                {
-                    tmp = std::vector<std::uint8_t>(vec.begin() + offset,
-                            vec.end());
-                }
-                tmp[n] = 0x90;
-            }
-        }
+        return decode_latin(vec, offset, len);
     }
     else if (vec[offset] <= 0xb)
         from_enc = iso8859_n(vec[offset] + 4);
@@ -85,11 +130,18 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
         from_enc = "BIG-5";
     else if (vec[offset] == 0x15)
         from_enc = "ISO-10646/UTF-8";
+    else if (vec[offset] == 0x1f)
+        from_enc = iso8859_n(vec[offset + 1]);
 
     if (vec[offset] == 0x10)
     {
         offset += 3;
         len -= 3;
+    }
+    else if (vec[offset] == 0x1f)
+    {
+        offset += 2;
+        len -= 2;
     }
     else if (vec[offset] < 0x20)
     {
