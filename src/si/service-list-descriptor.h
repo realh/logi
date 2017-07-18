@@ -26,21 +26,25 @@
 namespace logi
 {
 
+class ServiceInfo
+{
+private:
+    std::uint16_t service_id_;
+    std::uint8_t service_type_;
+public:
+    ServiceInfo(std::uint16_t sid, std::uint8_t stype) :
+        service_id_(sid), service_type_(stype)
+    {}
+
+    std::uint16_t service_id() const { return service_id_; }
+
+    // TODO: An enum would be good here
+    std::uint8_t service_type() const { return service_type_; }
+};
+
 class ServiceListDescriptor : public Descriptor
 {
 public:
-
-    class ServiceInfo : public SectionData
-    {
-    public:
-        ServiceInfo(const Descriptor &source, unsigned offset) :
-            SectionData(source.get_data(), source.get_offset() + offset)
-        {}
-
-        std::uint16_t service_id() const { return word16(0); }
-
-        std::uint8_t service_type() const { return word8(2); }
-    };
 
     ServiceListDescriptor(const Descriptor &source) : Descriptor(source)
     {}

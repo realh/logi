@@ -22,13 +22,13 @@
 namespace logi
 {
 
-std::vector<ServiceListDescriptor::ServiceInfo>
+std::vector<ServiceInfo>
 ServiceListDescriptor::get_services() const
 {
     std::vector<ServiceInfo> svcs;
-    for (unsigned n = 0; n < get_services_length(); ++n)
+    for (unsigned n = 0; n < get_services_length(); n += 3)
     {
-        svcs.emplace_back(*this, n + 2);
+        svcs.emplace_back(word16(n + 2), word8(n + 4));
     }
     return svcs;
 }
