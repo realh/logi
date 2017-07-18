@@ -34,12 +34,12 @@ TableTracker::Result TableTracker::track(const Section &sec)
 
     if (version_number_ == -1)
     {
-        g_print("Starting with version number %d\n", vn);
+        g_debug("Starting with version number %d", vn);
         version_number_ = vn;
     }
     else if (vn > version_number_ || (vn < 64 && version_number_ >= 400))
     {
-        g_print("New table version %d\n", vn);
+        g_debug("New table version %d", vn);
         reset();
         version_number_ = vn;
     }

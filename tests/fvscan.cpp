@@ -23,7 +23,7 @@
 
 #include "scan/dvbt-tuning-iterator.h"
 #include "scan/multi-scanner.h"
-#include "scan/standard-channel-scanner.h"
+#include "scan/freeview-channel-scanner.h"
 #include "udev/udev-client.h"
 
 using namespace logi;
@@ -101,7 +101,7 @@ int main()
         return 1;
 
     MultiScanner scanner { rcv,
-        std::shared_ptr<ChannelScanner> { new StandardChannelScanner() },
+        std::shared_ptr<ChannelScanner> { new FreeviewChannelScanner() },
         std::shared_ptr<DvbtTuningIterator> { new DvbtTuningIterator() } };
 
     main_loop = Glib::MainLoop::create();

@@ -1,6 +1,7 @@
 set(LOGI_SCAN_SOURCES
     channel-scanner.cpp
     dvbt-tuning-iterator.cpp
+    freeview-channel-scanner.cpp
     multi-scanner.cpp
     nit-processor.cpp
     standard-channel-scanner.cpp
@@ -9,6 +10,7 @@ set(LOGI_SCAN_SOURCES
 set(LOGI_SCAN_HEADERS
     channel-scanner.h
     dvbt-tuning-iterator.h
+    freeview-channel-scanner.h
     multi-scanner.h
     nit-processor.h
     standard-channel-scanner.h

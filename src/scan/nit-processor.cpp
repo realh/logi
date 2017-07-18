@@ -38,17 +38,17 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
     switch (tracker_.track(*sec))
     {
         case TableTracker::REPEAT:
-            g_print("Repeat NIT section number %d\n", sec->section_number());
+            g_debug("Repeat NIT section number %d", sec->section_number());
             return false;
         case TableTracker::REPEAT_COMPLETE:
-            g_print("Repeat and complete (%d)\n", sec->section_number());
+            g_debug("Repeat and complete (%d)", sec->section_number());
             return true;
         case TableTracker::COMPLETE:
             complete = true;
         case TableTracker::OK:
             break;
         case TableTracker::OLD_VERSION:
-            g_print("Old NIT section version %d\n", sec->version_number());
+            g_debug("Old NIT section version %d", sec->version_number());
             return false;
     }
 
@@ -56,62 +56,58 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
     //sec->dump_to_stdout();
     //g_print("********\n");
 
-    g_print("%02x section %d/%d for nw_id %d, len %d\n",
+    g_debug("%02x section %d/%d for nw_id %d, len %d",
             sec->table_id(),
             sec->section_number(), sec->last_section_number(),
             sec->network_id(),
             sec->section_length());
 
-    g_print("Network descriptors (len %d):\n  ",
+    g_debug("Network descriptors (len %d):",
             sec->network_descriptors_length());
     auto descs = sec->get_network_descriptors();
     for (auto &desc: descs)
     {
-        g_print("0x%02x+%d  ", desc.tag(), desc.length());
+        g_debug("0x%02x+%d  ", desc.tag(), desc.length());
     }
     for (auto &desc: descs)
     {
         process_descriptor(desc);
     }
-    g_print("\n");
     if (network_name_.size())
-        g_print("Network name '%s'\n", network_name_.c_str());
+        g_debug("Network name '%s'", network_name_.c_str());
 
-    g_print("Transport streams (len %d):\n",
+    g_debug("Transport streams (len %d):",
             sec->transport_stream_loop_length());
     for (auto &ts: sec->get_transport_stream_loop())
     {
-        //g_print("  TS subsection offset %d len %d (%x) + 6\n",
+        //g_debug("  TS subsection offset %d len %d (%x) + 6",
         //        ts.get_offset(), ts.word12(4), ts.word12(4));
-        //g_print("  ts.transport_descriptors_length %d\n",
+        //g_debug("  ts.transport_descriptors_length %d",
         //        ts.transport_descriptors_length());
-        //g_print("  from parent section %d\n",
+        //g_debug("  from parent section %d",
         //        sec->word12(ts.get_offset() + 4));
         process_ts_data(ts);
     }
-    g_print("\n");
 
     return complete;
 }
 
 void NITProcessor::process_ts_data(const TSSectionData &ts)
 {
-    g_print("  transport_stream_id: %d,\toriginal_network_id %d\n",
+    g_debug("  transport_stream_id: %d,\toriginal_network_id %d",
             ts.transport_stream_id(), ts.original_network_id());
-    g_print("  Transport descriptors (len %d):\n    ",
+    g_debug("  Transport descriptors (len %d):",
             ts.transport_descriptors_length());
     current_ts_id_ = ts.transport_stream_id();
     auto descs = ts.get_transport_descriptors();
     for (auto &desc: descs)
     {
-        g_print("0x%02x+%d  ", desc.tag(), desc.length());
+        g_debug("    0x%02x+%d", desc.tag(), desc.length());
     }
-    g_print("\n");
     for (auto &desc: descs)
     {
         process_descriptor(desc);
     }
-    g_print("\n\n");
 }
 
 void NITProcessor::process_descriptor(const Descriptor &desc)

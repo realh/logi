@@ -42,7 +42,7 @@ void SectionFilterBase::start(struct dmx_sct_filter_params *params)
     std::shared_ptr<Frontend> fe(rcv_->get_frontend());
 
     fd_ = ::open(fe->get_dmx_name().c_str(), O_RDONLY | O_NONBLOCK);
-    g_print("Opened section filter fd %d\n", fd_);
+    g_debug("Opened section filter fd %d", fd_);
     if (fd_ < 0)
     {
         throw fe->report_errno(FrontendError::FILTER,
@@ -72,7 +72,7 @@ void SectionFilterBase::stop()
     }
     if (fd_ >= 0)
     {
-        g_print("Closed section filter fd %d\n", fd_);
+        g_debug("Closed section filter fd %d", fd_);
         ::close(fd_);
         fd_ = -1;
     }
@@ -80,7 +80,7 @@ void SectionFilterBase::stop()
 
 bool SectionFilterBase::io_cb(Glib::IOCondition cond)
 {
-    g_print("Section filter condition %x\n", cond);
+    g_debug("Section filter condition %x", cond);
     if (cond && (G_IO_IN | G_IO_PRI))
     {
         Section *sec = construct_section();
@@ -109,7 +109,7 @@ void SectionFilterBase::get_params(struct dmx_sct_filter_params &params,
     params.filter.mask[2] = section_id_mask & 0xff;
     params.timeout = timeout;
     params.flags = DMX_CHECK_CRC | DMX_IMMEDIATE_START;
-    g_print("pid %x, table_id %x/%x, section_id %x/%x\n",
+    g_debug("pid %x, table_id %x/%x, section_id %x/%x",
             pid, table_id, table_id_mask, section_id, section_id_mask);
 }
 

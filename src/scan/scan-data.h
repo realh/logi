@@ -109,4 +109,8 @@ private:
     ScanStatus scan_status_;
 };
 
+class ServiceData
+{
+};
+
 }
