@@ -75,7 +75,10 @@ public:
      */
     bool is_complete() const override;
 protected:
-    std::unique_ptr<NITProcessor> new_nit_processor();
+    /**
+     * Can be overridden to specialise the NITProcessor eg for Freeview LCNs.
+     */
+    virtual std::unique_ptr<NITProcessor> new_nit_processor();
 private:
     void nit_filter_cb(int reason, std::shared_ptr<NITSection> section);
 
