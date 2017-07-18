@@ -60,6 +60,8 @@ public:
     }
 
     Result track(const Section &sec);
+
+    bool complete() const { return complete_; }
 };
 
 }

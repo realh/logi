@@ -4,6 +4,7 @@ set(LOGI_SCAN_SOURCES
     freeview-channel-scanner.cpp
     multi-scanner.cpp
     nit-processor.cpp
+    sdt-processor.cpp
     standard-channel-scanner.cpp
 )
 
@@ -13,6 +14,7 @@ set(LOGI_SCAN_HEADERS
     freeview-channel-scanner.h
     multi-scanner.h
     nit-processor.h
+    sdt-processor.h
     standard-channel-scanner.h
     tuning-iterator.h
 )

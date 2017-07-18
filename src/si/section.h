@@ -2,7 +2,7 @@
 
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2016-2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -41,7 +41,7 @@ public:
      */
     int read_from_fd(int fd);
 
-    std::uint8_t table_id()             const   { return data_[0]; }
+    std::uint8_t table_id()             const   { return word8(0); }
 
     std::uint16_t section_length()      const   { return word12(1); }
 

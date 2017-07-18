@@ -41,10 +41,11 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
             g_debug("Repeat NIT section number %d", sec->section_number());
             return false;
         case TableTracker::REPEAT_COMPLETE:
-            g_debug("Repeat and complete (%d)", sec->section_number());
+            g_debug("Repeat and complete NIT (%d)", sec->section_number());
             return true;
         case TableTracker::COMPLETE:
             complete = true;
+            break;
         case TableTracker::OK:
             break;
         case TableTracker::OLD_VERSION:

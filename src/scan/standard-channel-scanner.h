@@ -24,6 +24,7 @@
 
 #include "channel-scanner.h"
 #include "nit-processor.h"
+#include "sdt-processor.h"
 #include "section-filter.h"
 
 namespace logi
@@ -38,7 +39,9 @@ class StandardChannelScanner : public ChannelScanner
 private:
     std::unique_ptr<SectionFilter<NITSection, StandardChannelScanner> >
         nit_filter_;
-    bool nit_error_;
+    std::unique_ptr<SectionFilter<SDTSection, StandardChannelScanner> >
+        sdt_filter_;
+    bool filter_error_;
 
     struct NetworkData
     {
@@ -57,8 +60,12 @@ private:
     using ConstNwPair = const std::pair<const std::uint16_t,
           std::unique_ptr<NetworkData> >;
     NwMap networks_;
+
+    bool sdt_complete_;
+
+    std::unique_ptr<SDTProcessor> sdt_proc_;
 public:
-    StandardChannelScanner() : ChannelScanner(), nit_error_{false}
+    StandardChannelScanner() : ChannelScanner(), filter_error_{false}
     {}
 
     void start(MultiScanner *multi_scanner) override;
@@ -79,8 +86,14 @@ protected:
      * Can be overridden to specialise the NITProcessor eg for Freeview LCNs.
      */
     virtual std::unique_ptr<NITProcessor> new_nit_processor();
+
+    virtual std::unique_ptr<SDTProcessor> new_sdt_processor();
 private:
+    NetworkData *get_network_data(std::uint16_t network_id);
+
     void nit_filter_cb(int reason, std::shared_ptr<NITSection> section);
+
+    void sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section);
 
     bool all_complete_or_error() const;
 

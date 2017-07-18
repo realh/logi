@@ -12,6 +12,7 @@ set(LOGI_CORE_SOURCES
     si/huffman-table1.cpp
     si/huffman-table2.cpp
     si/nit-section.cpp
+    si/sdt-section.cpp
     si/section.cpp
     si/section-data.cpp
     si/service-list-descriptor.cpp
@@ -30,8 +31,10 @@ set(LOGI_CORE_HEADERS
     si/huffman.h
     si/network-name-descriptor.h
     si/nit-section.h
+    si/sdt-section.h
     si/section.h
     si/section-data.h
+    si/service-descriptor.h
     si/service-list-descriptor.h
     si/table-tracker.h
     si/terr-delsys-descriptor.h
