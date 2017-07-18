@@ -66,7 +66,8 @@ void StandardChannelScanner::nit_filter_cb(int reason,
         if (ndi == networks_.end())
         {
             networks_[network_id] =
-                std::unique_ptr<NetworkData>(nd = new NetworkData());
+                std::unique_ptr<NetworkData>
+                    (nd = new NetworkData(new_nit_processor()));
         }
         else
         {
@@ -83,7 +84,7 @@ void StandardChannelScanner::nit_filter_cb(int reason,
     else if (nd)
     {
         nit_error_ = false;
-        nd->nit_complete = nd->nit_proc.process(section, multi_scanner_);
+        nd->nit_complete = nd->nit_proc->process(section, multi_scanner_);
     }
 
     if (!section || all_complete_or_error())
@@ -91,6 +92,11 @@ void StandardChannelScanner::nit_filter_cb(int reason,
         nit_filter_->stop();
         finished(any_complete());
     }
+}
+
+std::unique_ptr<NITProcessor> StandardChannelScanner::new_nit_processor()
+{
+    return std::unique_ptr<NITProcessor>(new NITProcessor());
 }
 
 bool StandardChannelScanner::all_complete_or_error() const

@@ -42,9 +42,11 @@ private:
 
     struct NetworkData
     {
-        NITProcessor nit_proc;
+        std::unique_ptr<NITProcessor> nit_proc;
         bool nit_complete;
-        NetworkData() : nit_complete(false) {}
+        NetworkData(std::unique_ptr<NITProcessor> &&np) :
+            nit_proc(std::move(np)), nit_complete(false)
+        {}
     };
     // In practice we're unlikely to see more than a couple of networks, so
     // a map is a horrible waste of CPU cycles etc, but it is scalable and 
@@ -72,6 +74,8 @@ public:
      * Returns: Whether a complete data set has been acquired.
      */
     bool is_complete() const override;
+protected:
+    std::unique_ptr<NITProcessor> new_nit_processor();
 private:
     void nit_filter_cb(int reason, std::shared_ptr<NITSection> section);
 
