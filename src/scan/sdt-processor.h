@@ -39,7 +39,7 @@ class SDTProcessor
 private:
     TableTracker this_ts_tracker_, other_ts_tracker_;
     MultiScanner *mscanner_;
-    std::uint16_t current_ts_id_;
+    std::uint16_t current_ts_id_, current_service_id_;
 public:
     /**
      * process:
@@ -50,8 +50,6 @@ protected:
     virtual void process_service_data(const SDTSectionServiceData &ts);
 
     virtual void process_descriptor(const Descriptor &desc);
-
-    virtual void process_service_descriptor(const Descriptor &desc);
 };
 
 }

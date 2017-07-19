@@ -56,15 +56,17 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
     g_print("********\n");
     */
 
-    g_print("%02x SDT section %d/%d for orig_nw_id %d, len %d\n",
+    g_debug("%02x SDT section %d/%d for orig_nw_id %d, len %d",
             sec->table_id(),
             sec->section_number(), sec->last_section_number(),
             sec->original_network_id(),
             sec->section_length());
 
+    current_ts_id_ = sec->transport_stream_id();
+
     auto services = sec->get_services();
 
-    g_print("%ld services:\n", services.size());
+    g_debug("%ld services", services.size());
     for (auto &svc: services)
     {
         process_service_data(svc);
@@ -75,8 +77,9 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
 
 void SDTProcessor::process_service_data(const SDTSectionServiceData &svc)
 {
-    g_print("  service_id 0x%04x at offset %d\n",
+    g_debug("  service_id 0x%04x at offset %d",
             svc.service_id(), svc.get_offset());
+    current_service_id_ = svc.service_id();
     auto descs = svc.get_descriptors();
     for (auto &desc: descs)
     {
@@ -86,23 +89,15 @@ void SDTProcessor::process_service_data(const SDTSectionServiceData &svc)
 
 void SDTProcessor::process_descriptor(const Descriptor &desc)
 {
-    g_print("Descriptor tag %02x size %d @ %d\n",
+    g_debug("    Descriptor tag %02x size %d @ %d",
             desc.tag(), desc.length(), desc.get_offset());
     switch (desc.tag())
     {
         case Descriptor::SERVICE:
-            process_service_descriptor(desc);
+            mscanner_->process_service_descriptor(current_ts_id_,
+                    current_service_id_, desc);
             break;
     }
-}
-
-void SDTProcessor::process_service_descriptor(const Descriptor &desc)
-{
-    ServiceDescriptor sdesc(desc);
-    g_print("  Type %d, provider_name '%s', name '%s'\n",
-            sdesc.service_type(),
-            sdesc.service_provider_name().c_str(),
-            sdesc.service_name().c_str());
 }
 
 }

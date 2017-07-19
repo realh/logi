@@ -104,6 +104,10 @@ public:
     void process_delivery_system_descriptor(std::uint16_t ts_id,
             const Descriptor &desc);
 
+    void process_service_descriptor(std::uint16_t ts_id,
+            std::uint16_t service_id,
+            const Descriptor &desc);
+
     friend ChannelScanner;
 private:
     /**

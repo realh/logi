@@ -22,6 +22,7 @@
 #include "channel-scanner.h"
 #include "multi-scanner.h"
 
+#include "si/service-descriptor.h"
 #include "si/service-list-descriptor.h"
 #include "si/terr-delsys-descriptor.h"
 
@@ -205,6 +206,17 @@ void MultiScanner::process_delivery_system_descriptor(std::uint16_t ts_id,
     auto &tsdat = get_transport_stream_data(ts_id);
     tsdat.set_tuning(d.get_tuning_properties());
     g_debug("    TS %d: %s", ts_id, tsdat.get_tuning()->describe().c_str());
+}
+
+void MultiScanner::process_service_descriptor(std::uint16_t ts_id,
+        std::uint16_t service_id,
+        const Descriptor &desc)
+{
+    ServiceDescriptor sdesc(desc);
+    g_debug("  Type %d, provider_name '%s', name '%s'",
+            sdesc.service_type(),
+            sdesc.service_provider_name().c_str(),
+            sdesc.service_name().c_str());
 }
 
 }
