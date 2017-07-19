@@ -107,7 +107,8 @@ void StandardChannelScanner::nit_filter_cb(int reason,
     if (!section || all_complete_or_error())
     {
         nit_filter_->stop();
-        finished(any_complete());
+        if (sdt_complete_)
+            finished(any_complete());
     }
 }
 

@@ -57,7 +57,7 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
     //sec->dump_to_stdout();
     //g_print("********\n");
 
-    g_debug("%02x section %d/%d for nw_id %d, len %d",
+    g_print("%02x NIT section %d/%d for nw_id %d, len %d\n",
             sec->table_id(),
             sec->section_number(), sec->last_section_number(),
             sec->network_id(),

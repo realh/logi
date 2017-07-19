@@ -54,7 +54,7 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
     //sec->dump_to_stdout();
     //g_print("********\n");
 
-    g_print("%02x section %d/%d for orig_nw_id %d, len %d\n",
+    g_print("%02x SDT section %d/%d for orig_nw_id %d, len %d\n",
             sec->table_id(),
             sec->section_number(), sec->last_section_number(),
             sec->original_network_id(),
@@ -62,12 +62,11 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
 
     auto services = sec->get_services();
 
-    g_print("Services:\n");
+    g_print("%ld services:\n", services.size());
     for (auto &svc: services)
     {
         process_service_data(svc);
     }
-    g_print("\n");
 
     return this_ts_tracker_.complete() && other_ts_tracker_.complete();
 }

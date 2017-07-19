@@ -142,11 +142,12 @@ void MultiScanner::next()
         g_print("Tuning to %s... ", props->describe().c_str());
         try
         {
-            rcv_->tune(props, 5000);
+            rcv_->tune(props, 10000);
             break;
         }
         catch (Glib::Exception &x)
         {
+            g_print("\n");
             g_log(nullptr, G_LOG_LEVEL_CRITICAL, "%s", x.what().c_str());
         }
     }
