@@ -50,9 +50,11 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
             return false;
     }
 
-    //g_print("********\n");
-    //sec->dump_to_stdout();
-    //g_print("********\n");
+    /*
+    g_print("********\n");
+    sec->dump_to_stdout();
+    g_print("********\n");
+    */
 
     g_print("%02x SDT section %d/%d for orig_nw_id %d, len %d\n",
             sec->table_id(),
@@ -73,7 +75,8 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
 
 void SDTProcessor::process_service_data(const SDTSectionServiceData &svc)
 {
-    g_print("  service_id 0x%04x\n", svc.service_id());
+    g_print("  service_id 0x%04x at offset %d\n",
+            svc.service_id(), svc.get_offset());
     auto descs = svc.get_descriptors();
     for (auto &desc: descs)
     {
@@ -83,6 +86,8 @@ void SDTProcessor::process_service_data(const SDTSectionServiceData &svc)
 
 void SDTProcessor::process_descriptor(const Descriptor &desc)
 {
+    g_print("Descriptor tag %02x size %d @ %d\n",
+            desc.tag(), desc.length(), desc.get_offset());
     switch (desc.tag())
     {
         case Descriptor::SERVICE:

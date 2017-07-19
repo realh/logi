@@ -60,7 +60,7 @@ public:
 
     std::vector<Descriptor> get_descriptors() const
     {
-        return SectionData::get_descriptors(5);
+        return SectionData::get_descriptors(3);
     }
 };
 
