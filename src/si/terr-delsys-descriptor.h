@@ -34,7 +34,7 @@ public:
     /// Result is in Hz
     std::uint32_t centre_frequency() const { return word32(2) * 10; }
 
-    fe_bandwidth_t bandwidth() const
+    std::uint32_t bandwidth() const
     {
         return DeliverySystemDescriptor::bandwidth((word8(6) & 0xe0) >> 5);
     }

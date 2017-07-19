@@ -33,7 +33,7 @@ public:
         Descriptor(source)
     {}
 
-    static fe_bandwidth_t bandwidth(std::uint8_t b);
+    static std::uint32_t bandwidth(std::uint8_t b);
 
     static fe_code_rate_t code_rate(std::uint8_t r);
 

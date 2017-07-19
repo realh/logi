@@ -22,20 +22,20 @@
 namespace logi
 {
 
-fe_bandwidth_t DeliverySystemDescriptor::bandwidth(std::uint8_t b)
+std::uint32_t DeliverySystemDescriptor::bandwidth(std::uint8_t b)
 {
     switch (b)
     {
         case 0:
-            return BANDWIDTH_8_MHZ;
+            return 8000000;
         case 1:
-            return BANDWIDTH_7_MHZ;
+            return 7000000;
         case 2:
-            return BANDWIDTH_6_MHZ;
+            return 6000000;
         case 3:
-            return BANDWIDTH_5_MHZ;
+            return 5000000;
     }
-    return BANDWIDTH_AUTO;
+    return 8000000;
 }
 
 fe_code_rate_t DeliverySystemDescriptor::code_rate(std::uint8_t r)
