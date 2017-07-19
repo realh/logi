@@ -57,6 +57,7 @@ private:
 
     std::map<std::uint16_t, TransportStreamData> ts_data_;
     TransportStreamData *current_ts_data_;
+    std::map<std::uint16_t, ServiceData> service_data_;
 public:
     MultiScanner(std::shared_ptr<Receiver> rcv,
             std::shared_ptr<ChannelScanner> channel_scanner,
@@ -98,6 +99,9 @@ public:
     /// Returns either a new TransportStreamData or an existing one
     TransportStreamData &get_transport_stream_data(std::uint16_t ts_id);
 
+    /// Returns either a new ServiceData or an existing one
+    ServiceData &get_service_data(std::uint16_t service_id);
+
     void process_service_list_descriptor(std::uint16_t ts_id,
             const Descriptor &desc);
 
@@ -107,6 +111,8 @@ public:
     void process_service_descriptor(std::uint16_t ts_id,
             std::uint16_t service_id,
             const Descriptor &desc);
+
+    void set_lcn(std::uint16_t service_id, std::uint16_t lcn);
 
     friend ChannelScanner;
 private:
@@ -120,6 +126,9 @@ private:
     void lock_cb();
 
     void nolock_cb();
+
+    /// Returns true if harvest appears to be complete
+    bool check_harvest();
 };
 
 }

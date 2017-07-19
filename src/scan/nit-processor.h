@@ -37,7 +37,7 @@ class MultiScanner;
  */
 class NITProcessor
 {
-private:
+protected:
     TableTracker tracker_;
     Glib::ustring network_name_;
     MultiScanner *mscanner_;

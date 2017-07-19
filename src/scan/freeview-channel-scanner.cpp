@@ -18,6 +18,7 @@
 */
 
 #include "freeview-channel-scanner.h"
+#include "multi-scanner.h"
 
 namespace logi
 {
@@ -42,6 +43,7 @@ void FreeviewNITProcessor::process_descriptor(const Descriptor &desc)
         for (const auto &l: lcn_desc.get_lcn_pairs())
         {
             g_debug("    sid %04x lcn %d", l.service_id(), l.lcn()); 
+            mscanner_->set_lcn(l.service_id(), l.lcn());
         }
     }
     else

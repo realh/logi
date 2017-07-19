@@ -111,6 +111,82 @@ private:
 
 class ServiceData
 {
+public:
+    ServiceData(std::uint16_t service_id = 0,
+            std::uint16_t transport_stream_id = 0,
+            bool scanned = false) :
+        service_id_(service_id),
+        transport_stream_id_(transport_stream_id),
+        lcn_(0),
+        scanned_(scanned)
+    {}
+
+    void set_service_id(std::uint16_t service_id)
+    {
+        service_id_ = service_id;
+    }
+
+    std::uint16_t get_service_id() const
+    {
+        return service_id_;
+    }
+
+    void set_transport_stream_id(std::uint16_t transport_stream_id)
+    {
+        transport_stream_id_ = transport_stream_id;
+    }
+
+    std::uint16_t get_transport_stream_id() const
+    {
+        return transport_stream_id_;
+    }
+
+    template<class S> void set_name(S &&name)
+    {
+        name_ = name;
+    }
+
+    const Glib::ustring &get_name() const
+    {
+        return name_;
+    }
+
+    template<class S> void set_provider_name(S &&name)
+    {
+        provider_name_ = name;
+    }
+
+    const Glib::ustring &get_provider_name() const
+    {
+        return provider_name_;
+    }
+
+    void set_lcn(std::uint16_t lcn)
+    {
+        lcn_ = lcn;
+    }
+
+    std::uint16_t get_lcn() const
+    {
+        return lcn_;
+    }
+
+    void set_scanned()
+    {
+        scanned_ = true;
+    }
+
+    bool get_scanned() const
+    {
+        return scanned_;
+    }
+private:
+    std::uint16_t service_id_;
+    std::uint16_t transport_stream_id_;
+    Glib::ustring name_, provider_name_;
+    // TODO: Needs a more complex structure for Freesat
+    std::uint16_t lcn_;
+    bool scanned_;
 };
 
 }

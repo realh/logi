@@ -89,6 +89,12 @@ void MultiScanner::channel_finished(bool success)
 
 void MultiScanner::next()
 {
+    if (check_harvest())
+    {
+        cancel();
+        return;
+    }
+
     /*
     g_debug("NEXT");
     for (const auto &tspair: ts_data_)
@@ -177,6 +183,13 @@ MultiScanner::get_transport_stream_data(std::uint16_t ts_id)
     return tsdat;
 }
 
+ServiceData &
+MultiScanner::get_service_data(std::uint16_t service_id)
+{
+    auto &sdat = service_data_[service_id];
+    sdat.set_service_id(service_id);
+    return sdat;
+}
 
 void MultiScanner::process_service_list_descriptor(std::uint16_t ts_id,
         const Descriptor &desc)
@@ -195,6 +208,7 @@ void MultiScanner::process_service_list_descriptor(std::uint16_t ts_id,
     for (const auto &s: svcs)
     {
         tsdat.add_service_id(s.service_id());
+        get_service_data(s.service_id()).set_service_id(s.service_id());
     }
 }
 
@@ -217,6 +231,29 @@ void MultiScanner::process_service_descriptor(std::uint16_t ts_id,
             sdesc.service_type(),
             sdesc.service_provider_name().c_str(),
             sdesc.service_name().c_str());
+    auto &sdat = get_service_data(service_id);
+    sdat.set_transport_stream_id(ts_id);
+    sdat.set_scanned();
+    sdat.set_name(sdesc.service_name());
+    sdat.set_provider_name(sdesc.service_provider_name());
+}
+
+void MultiScanner::set_lcn(std::uint16_t service_id, std::uint16_t lcn)
+{
+    auto &sdat = get_service_data(service_id);
+    sdat.set_lcn(lcn);
+}
+
+bool MultiScanner::check_harvest()
+{
+    if (!ts_data_.size() || !service_data_.size())
+        return false;
+    return std::all_of(ts_data_.begin(), ts_data_.end(),
+        [](const std::pair<std::uint16_t, const TransportStreamData &> &ts)
+        { return ts.second.get_scan_status() != TransportStreamData::PENDING; })
+    && std::all_of(service_data_.begin(), service_data_.end(),
+        [](const std::pair<std::uint16_t, const ServiceData &> &s)
+        { return s.second.get_scanned(); });
 }
 
 }
