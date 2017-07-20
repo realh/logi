@@ -69,7 +69,7 @@ TuningProperties::TuningProperties(
 {
     for (const auto &prop: props)
     {
-        append_prop(prop.first, prop.second);
+        append_prop_priv(prop.first, prop.second);
     }
     fix_props();
 }
@@ -230,7 +230,7 @@ void TuningProperties::parse_dvb_s(guint n, char **tokens, const char *s)
         default:
             throw report_parse_error("Invalid type", s);
     }
-    append_prop(DTV_DELIVERY_SYSTEM, val);
+    append_prop_priv(DTV_DELIVERY_SYSTEM, val);
 
     val = parse_number(tokens[1], s);
     if (val < SLOF)
@@ -241,7 +241,7 @@ void TuningProperties::parse_dvb_s(guint n, char **tokens, const char *s)
     {
         val -= LOF2;
     }
-    append_prop(DTV_FREQUENCY, val);
+    append_prop_priv(DTV_FREQUENCY, val);
 
     if (tokens[2][0] == 'H' || tokens[2][0] == 'L')
         val = SEC_VOLTAGE_18;
@@ -249,16 +249,16 @@ void TuningProperties::parse_dvb_s(guint n, char **tokens, const char *s)
         val = SEC_VOLTAGE_13;
     else
         throw report_parse_error("Invalid polarity", s);
-    append_prop(DTV_VOLTAGE, val);
+    append_prop_priv(DTV_VOLTAGE, val);
 
-    append_prop(DTV_SYMBOL_RATE, parse_number(tokens[3], s));
-    append_prop(DTV_INNER_FEC, parse_code_rate(tokens[4], s));
+    append_prop_priv(DTV_SYMBOL_RATE, parse_number(tokens[3], s));
+    append_prop_priv(DTV_INNER_FEC, parse_code_rate(tokens[4], s));
 
     if (n > 5 && tokens[0][1] != '1')
     {
-        append_prop(DTV_PILOT, PILOT_AUTO);
-        append_prop(DTV_ROLLOFF, parse_roll_off(tokens[5], s));
-        append_prop(DTV_MODULATION, parse_modulation(tokens[6], s));
+        append_prop_priv(DTV_PILOT, PILOT_AUTO);
+        append_prop_priv(DTV_ROLLOFF, parse_roll_off(tokens[5], s));
+        append_prop_priv(DTV_MODULATION, parse_modulation(tokens[6], s));
     }
 
     fix_props();
