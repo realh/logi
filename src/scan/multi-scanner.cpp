@@ -152,7 +152,7 @@ void MultiScanner::next()
         g_print("Tuning to %s... ", props->linuxtv_description().c_str());
         try
         {
-            rcv_->tune(props, 10000);
+            rcv_->tune(props, 5000);
             break;
         }
         catch (Glib::Exception &x)
