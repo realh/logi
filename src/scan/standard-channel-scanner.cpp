@@ -115,8 +115,7 @@ void StandardChannelScanner::nit_filter_cb(int reason,
 
     if (reason)
     {
-        g_log(nullptr, G_LOG_LEVEL_CRITICAL, 
-                "NIT filter error: %s\n", std::strerror(reason));
+        g_critical("NIT filter error: %s\n", std::strerror(reason));
         nit_status_ = TableTracker::ERROR;
     }
     else if (nd)
@@ -128,11 +127,11 @@ void StandardChannelScanner::nit_filter_cb(int reason,
             nit_status_ = TableTracker::OK;
     }
 
-    if (!section || nit_status_ == TableTracker::COMPLETE ||
-            nit_status_ == TableTracker::ERROR)
+    if (!section || nit_status_ == TableTracker::COMPLETE
+        || nit_status_ == TableTracker::ERROR)
     {
         nit_filter_->stop();
-        g_print("Testing completeness for NIT\n");
+        g_debug("Testing completeness for NIT");
         if (filter_trackers_complete())
             finished(any_complete());
     }
@@ -162,8 +161,8 @@ TableTracker::Result StandardChannelScanner::sdt_filter_cb(int reason,
     auto result = TableTracker::ERROR;
     if (reason)
     {
-        g_log(nullptr, G_LOG_LEVEL_CRITICAL, 
-                "SDT (%s ts) filter error: %s\n", label, std::strerror(reason));
+        g_critical("SDT (%s ts) filter error: %s\n",
+                label, std::strerror(reason));
         sdt_status = TableTracker::ERROR;
     }
     else if (section)
@@ -172,29 +171,26 @@ TableTracker::Result StandardChannelScanner::sdt_filter_cb(int reason,
         switch (result)
         {
             case TableTracker::REPEAT_COMPLETE:
-                g_print("SDT (%s ts) REPEAT_COMPLETE\n", label);
+                g_debug("SDT (%s ts) REPEAT_COMPLETE", label);
                 sdt_status = result;
                 break;
             case TableTracker::COMPLETE:
-                g_print("SDT (%s ts) COMPLETE\n", label);
+                g_debug("SDT (%s ts) COMPLETE", label);
                 sdt_status = result;
                 break;
             default:
-                g_print("SDT (%s ts) %d\n", label, result);
+                g_debug("SDT (%s ts) %d\n", label, result);
                 if (sdt_status == TableTracker::BLANK)
                     sdt_status = result;
                 break;
         }
     }
 
-    // Don't stop the filter until we start receiving repeats, because we
-    // want to know if we're getting repeats before the other SDT filter
-    // has received anything, which means that other table probably isn't
-    // present on this channel and we should skip
-    if (!section || sdt_status == TableTracker::REPEAT_COMPLETE)
+    if (!section || sdt_status == TableTracker::COMPLETE
+            || sdt_status == TableTracker::REPEAT_COMPLETE)
     {
         sdt_filter->stop();
-        g_print("Testing completeness for SDT (%s ts)\n", label);
+        g_debug("Testing completeness for SDT (%s ts)", label);
         if (filter_trackers_complete())
             finished(any_complete());
     }
@@ -236,14 +232,17 @@ bool StandardChannelScanner::filter_trackers_complete() const
     {
         return true;
     }
-    g_print("this_sdt_status_ %d, other_sdt_status_ %d\n",
-            this_sdt_status_, other_sdt_status_);
+    return false;
     // If one SDT is complete and repeating while the other's filter hasn't
     // received any data it probably means the latter isn't present
+    /*
+    g_debug("this_sdt_status_ %d, other_sdt_status_ %d",
+            this_sdt_status_, other_sdt_status_);
     return (this_sdt_status_ == TableTracker::REPEAT_COMPLETE &&
             other_sdt_status_ == TableTracker::BLANK)
         || (other_sdt_status_ == TableTracker::REPEAT_COMPLETE &&
             this_sdt_status_ == TableTracker::BLANK);
+    */
 }
 
 }
