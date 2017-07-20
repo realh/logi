@@ -27,27 +27,28 @@
 namespace logi
 {
 
-bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
+TableTracker::Result
+SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
 {
-    TableTracker &trkr = sec->table_id() == 0x42 ?
-        this_ts_tracker_ : other_ts_tracker_;
-
     mscanner_ = ms;
+    auto result = tracker_.track(*sec);
 
-    switch (trkr.track(*sec))
+    switch (result)
     {
         case TableTracker::REPEAT:
             g_debug("Repeat SDT section number %d", sec->section_number());
-            return false;
+            return result;
         case TableTracker::REPEAT_COMPLETE:
             g_debug("Repeat and complete SDT (%d)", sec->section_number());
-            return this_ts_tracker_.complete() && other_ts_tracker_.complete();
+            return result;
         case TableTracker::COMPLETE:
         case TableTracker::OK:
             break;
         case TableTracker::OLD_VERSION:
             g_debug("Old SDT section version %d", sec->version_number());
-            return false;
+            return result;
+        default:
+            break;
     }
 
     /*
@@ -56,7 +57,7 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
     g_print("********\n");
     */
 
-    g_debug("%02x SDT section %d/%d for orig_nw_id %d, len %d",
+    g_print("%02x SDT section %d/%d for orig_nw_id %d, len %d\n",
             sec->table_id(),
             sec->section_number(), sec->last_section_number(),
             sec->original_network_id(),
@@ -72,7 +73,7 @@ bool SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
         process_service_data(svc);
     }
 
-    return this_ts_tracker_.complete() && other_ts_tracker_.complete();
+    return result;
 }
 
 void SDTProcessor::process_service_data(const SDTSectionServiceData &svc)

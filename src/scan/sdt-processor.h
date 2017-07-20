@@ -37,15 +37,22 @@ class MultiScanner;
 class SDTProcessor
 {
 private:
-    TableTracker this_ts_tracker_, other_ts_tracker_;
+    TableTracker tracker_;
     MultiScanner *mscanner_;
     std::uint16_t current_ts_id_, current_service_id_;
 public:
-    /**
-     * process:
-     * Returns: true if a complete table has been received.
-     */
-    bool process(std::shared_ptr<SDTSection> sec, MultiScanner *ms);
+    TableTracker::Result
+    process(std::shared_ptr<SDTSection> sec, MultiScanner *ms);
+
+    void reset_tracker()
+    {
+        tracker_.reset();
+    }
+
+    bool complete() const
+    {
+        return tracker_.complete();
+    }
 protected:
     virtual void process_service_data(const SDTSectionServiceData &ts);
 

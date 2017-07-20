@@ -48,6 +48,11 @@ public:
      * Returns: true if a complete table has been received.
      */
     bool process(std::shared_ptr<NITSection> sec, MultiScanner *ms);
+
+    void reset_tracker()
+    {
+        tracker_.reset();
+    }
 protected:
     virtual void process_ts_data(const TSSectionData &ts);
 

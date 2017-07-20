@@ -39,11 +39,13 @@ private:
 public:
     enum Result
     {
+        BLANK,
         OK,                 /// This is a new section.
         COMPLETE,           /// This section completes the table.
         REPEAT,             /// Already have this section.
         REPEAT_COMPLETE,    /// Table was already complete.
         OLD_VERSION,        /// This section's version number is obsolete.
+        ERROR,
     };
 
     TableTracker() : version_number_(-1) {}
@@ -53,11 +55,7 @@ public:
     TableTracker &operator=(const TableTracker &) = delete;
     TableTracker &operator=(TableTracker &&) = delete;
 
-    void reset()
-    {
-        table_.clear();
-        complete_ = false;
-    }
+    void reset();
 
     Result track(const Section &sec);
 

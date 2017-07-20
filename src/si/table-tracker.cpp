@@ -27,6 +27,13 @@
 namespace logi
 {
 
+void TableTracker::reset()
+{
+    table_.clear();
+    complete_ = false;
+    version_number_ = -1;
+}
+
 TableTracker::Result TableTracker::track(const Section &sec)
 {
 
@@ -34,17 +41,18 @@ TableTracker::Result TableTracker::track(const Section &sec)
 
     if (version_number_ == -1)
     {
-        g_debug("Starting with version number %d", vn);
+        g_print("Starting with version number %d\n", vn);
         version_number_ = vn;
     }
     else if (vn > version_number_ || (vn < 64 && version_number_ >= 400))
     {
-        g_debug("New table version %d", vn);
+        g_print("New table version %d replaces %d\n", vn, version_number_);
         reset();
         version_number_ = vn;
     }
     else if (vn != version_number_)
     {
+        g_print("Old version %d, expecting %d\n", vn, version_number_);
         return OLD_VERSION;
     }
 

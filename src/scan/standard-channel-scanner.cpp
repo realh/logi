@@ -32,22 +32,37 @@ void StandardChannelScanner::start(MultiScanner *multi_scanner)
 {
     multi_scanner_ = multi_scanner;
     frontend_ = multi_scanner->get_frontend();
-    filter_error_ = false;
-    sdt_complete_ = false;
+    this_sdt_status_ = other_sdt_status_ = nit_status_ = TableTracker::BLANK;
 
-    // Creation of SDTProcessor is deferred to allow use of a virtual method
-    // and because TableTrackers need resetting for each channel
-    sdt_proc_ = new_sdt_processor();
+    // Creation of SDTProcessors is deferred to allow use of a virtual method
+    if (this_sdt_proc_)
+        this_sdt_proc_->reset_tracker();
+    else
+        this_sdt_proc_ = new_sdt_processor();
+    if (other_sdt_proc_)
+        other_sdt_proc_->reset_tracker();
+    else
+        other_sdt_proc_ = new_sdt_processor();
+
+    for (auto &nwd: networks_)
+    {
+        nwd.second->nit_proc->reset_tracker();
+    }
 
     nit_filter_.reset(new SectionFilter<NITSection, StandardChannelScanner>(
             multi_scanner->get_receiver(), *this,
             &StandardChannelScanner::nit_filter_cb,
             NIT_PID, 0x40, 0, 5000, 0xff, 0));
-    sdt_filter_.reset(new SectionFilter<SDTSection, StandardChannelScanner>(
+    this_sdt_filter_.reset
+        (new SectionFilter<SDTSection, StandardChannelScanner>(
             multi_scanner->get_receiver(), *this,
-            &StandardChannelScanner::sdt_filter_cb,
-            SDT_PID, 0x42, 0, 5000, 0xfb, 0));
-            // mask gets 0x42 and 0x46
+            &StandardChannelScanner::this_sdt_filter_cb,
+            SDT_PID, 0x42, 0, 5000, 0xff, 0));
+    other_sdt_filter_.reset
+        (new SectionFilter<SDTSection, StandardChannelScanner>(
+            multi_scanner->get_receiver(), *this,
+            &StandardChannelScanner::other_sdt_filter_cb,
+            SDT_PID, 0x46, 0, 5000, 0xff, 0));
 }
 
 void StandardChannelScanner::cancel()
@@ -57,10 +72,15 @@ void StandardChannelScanner::cancel()
         nit_filter_->stop();
         nit_filter_.reset();
     }
-    if (sdt_filter_)
+    if (this_sdt_filter_)
     {
-        sdt_filter_->stop();
-        sdt_filter_.reset();
+        this_sdt_filter_->stop();
+        this_sdt_filter_.reset();
+    }
+    if (other_sdt_filter_)
+    {
+        other_sdt_filter_->stop();
+        other_sdt_filter_.reset();
     }
 }
 
@@ -97,40 +117,88 @@ void StandardChannelScanner::nit_filter_cb(int reason,
     {
         g_log(nullptr, G_LOG_LEVEL_CRITICAL, 
                 "NIT filter error: %s\n", std::strerror(reason));
-        filter_error_ = true;
+        nit_status_ = TableTracker::ERROR;
     }
     else if (nd)
     {
         nd->nit_complete = nd->nit_proc->process(section, multi_scanner_);
+        if (nd->nit_complete)
+            nit_status_ = TableTracker::COMPLETE;
+        else if (nit_status_ == TableTracker::BLANK)
+            nit_status_ = TableTracker::OK;
     }
 
-    if (!section || all_complete_or_error())
+    if (!section || nit_status_ == TableTracker::COMPLETE ||
+            nit_status_ == TableTracker::ERROR)
     {
         nit_filter_->stop();
-        if (sdt_complete_)
+        g_print("Testing completeness for NIT\n");
+        if (filter_trackers_complete())
             finished(any_complete());
     }
 }
 
-void StandardChannelScanner::sdt_filter_cb(int reason,
+void StandardChannelScanner::this_sdt_filter_cb(int reason,
         std::shared_ptr<SDTSection> section)
 {
+    sdt_filter_cb(reason, section, this_sdt_proc_, this_sdt_filter_,
+            this_sdt_status_, "this");
+}
+
+void StandardChannelScanner::other_sdt_filter_cb(int reason,
+        std::shared_ptr<SDTSection> section)
+{
+    sdt_filter_cb(reason, section, other_sdt_proc_, other_sdt_filter_,
+            other_sdt_status_, "other");
+}
+
+TableTracker::Result StandardChannelScanner::sdt_filter_cb(int reason,
+        std::shared_ptr<SDTSection> section,
+        std::unique_ptr<SDTProcessor> &sdt_proc,
+        sdt_filter_ptr &sdt_filter,
+        TableTracker::Result &sdt_status,
+        const char *label)
+{
+    auto result = TableTracker::ERROR;
     if (reason)
     {
         g_log(nullptr, G_LOG_LEVEL_CRITICAL, 
-                "NIT filter error: %s\n", std::strerror(reason));
-        filter_error_ = true;
+                "SDT (%s ts) filter error: %s\n", label, std::strerror(reason));
+        sdt_status = TableTracker::ERROR;
     }
     else if (section)
     {
-        sdt_complete_ = sdt_proc_->process(section, multi_scanner_);
+        result = sdt_proc->process(section, multi_scanner_);
+        switch (result)
+        {
+            case TableTracker::REPEAT_COMPLETE:
+                g_print("SDT (%s ts) REPEAT_COMPLETE\n", label);
+                sdt_status = result;
+                break;
+            case TableTracker::COMPLETE:
+                g_print("SDT (%s ts) COMPLETE\n", label);
+                sdt_status = result;
+                break;
+            default:
+                g_print("SDT (%s ts) %d\n", label, result);
+                if (sdt_status == TableTracker::BLANK)
+                    sdt_status = result;
+                break;
+        }
     }
 
-    if (!section || all_complete_or_error())
+    // Don't stop the filter until we start receiving repeats, because we
+    // want to know if we're getting repeats before the other SDT filter
+    // has received anything, which means that other table probably isn't
+    // present on this channel and we should skip
+    if (!section || sdt_status == TableTracker::REPEAT_COMPLETE)
     {
-        sdt_filter_->stop();
-        finished(any_complete());
+        sdt_filter->stop();
+        g_print("Testing completeness for SDT (%s ts)\n", label);
+        if (filter_trackers_complete())
+            finished(any_complete());
     }
+    return result;
 }
 
 std::unique_ptr<NITProcessor> StandardChannelScanner::new_nit_processor()
@@ -143,18 +211,6 @@ std::unique_ptr<SDTProcessor> StandardChannelScanner::new_sdt_processor()
     return std::unique_ptr<SDTProcessor>(new SDTProcessor());
 }
 
-bool StandardChannelScanner::all_complete_or_error() const
-{
-    if (filter_error_)
-        return true;
-    return sdt_complete_ &&
-        std::all_of(networks_.begin(), networks_.end(),
-            [](ConstNwPair &n)->bool
-            {
-                return n.second->nit_complete;
-            });
-}
-
 bool StandardChannelScanner::any_complete() const
 {
     return std::any_of(networks_.begin(), networks_.end(),
@@ -162,6 +218,32 @@ bool StandardChannelScanner::any_complete() const
     {
         return n.second->nit_complete;
     });
+}
+
+bool StandardChannelScanner::filter_trackers_complete() const
+{
+    if (nit_status_ != TableTracker::COMPLETE &&
+            nit_status_ != TableTracker::ERROR)
+    {
+        return false;
+    }
+    if ((this_sdt_status_ == TableTracker::COMPLETE ||
+            this_sdt_status_ == TableTracker::REPEAT_COMPLETE ||
+            this_sdt_status_ == TableTracker::ERROR)
+        && (other_sdt_status_ == TableTracker::COMPLETE ||
+            other_sdt_status_ == TableTracker::REPEAT_COMPLETE || 
+            other_sdt_status_ == TableTracker::ERROR))
+    {
+        return true;
+    }
+    g_print("this_sdt_status_ %d, other_sdt_status_ %d\n",
+            this_sdt_status_, other_sdt_status_);
+    // If one SDT is complete and repeating while the other's filter hasn't
+    // received any data it probably means the latter isn't present
+    return (this_sdt_status_ == TableTracker::REPEAT_COMPLETE &&
+            other_sdt_status_ == TableTracker::BLANK)
+        || (other_sdt_status_ == TableTracker::REPEAT_COMPLETE &&
+            this_sdt_status_ == TableTracker::BLANK);
 }
 
 }

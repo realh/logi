@@ -210,9 +210,9 @@ std::uint32_t TuningProperties::get_equivalence_value() const
     guint32 d1;
 
     query_key_props(t1, f1, v1, d1);
-    bool gen2 = d1 == SYS_DVBT2 || d1 == SYS_DVBS2;
+    //bool gen2 = d1 == SYS_DVBT2 || d1 == SYS_DVBS2;
 
-    return (f1 / d1 / 2) | (v1 << 28) | (gen2 ? (1 << 31) : 0);
+    return (f1 / d1 / 2) | (v1 << 29) /* | (gen2 ? (1 << 28) : 0) */;
 }
 
 std::string TuningProperties::describe() const

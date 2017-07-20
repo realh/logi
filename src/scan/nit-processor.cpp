@@ -51,6 +51,8 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
         case TableTracker::OLD_VERSION:
             g_debug("Old NIT section version %d", sec->version_number());
             return false;
+        default:
+            break;
     }
 
     //g_print("********\n");

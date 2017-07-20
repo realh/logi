@@ -154,7 +154,7 @@ void MultiScanner::next()
         }
         catch (Glib::Exception &x)
         {
-            g_print("\n");
+            g_print("Failed\n");
             g_log(nullptr, G_LOG_LEVEL_CRITICAL, "%s", x.what().c_str());
         }
     }

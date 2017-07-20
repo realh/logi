@@ -37,11 +37,13 @@ namespace logi
 class StandardChannelScanner : public ChannelScanner
 {
 private:
-    std::unique_ptr<SectionFilter<NITSection, StandardChannelScanner> >
-        nit_filter_;
-    std::unique_ptr<SectionFilter<SDTSection, StandardChannelScanner> >
-        sdt_filter_;
-    bool filter_error_;
+    using nit_filter_ptr =
+        std::unique_ptr<SectionFilter<NITSection, StandardChannelScanner> >;
+    nit_filter_ptr nit_filter_;
+    using sdt_filter_ptr =
+        std::unique_ptr<SectionFilter<SDTSection, StandardChannelScanner> >;
+    sdt_filter_ptr this_sdt_filter_, other_sdt_filter_;
+    TableTracker::Result nit_status_, this_sdt_status_, other_sdt_status_;
 
     struct NetworkData
     {
@@ -61,11 +63,9 @@ private:
           std::unique_ptr<NetworkData> >;
     NwMap networks_;
 
-    bool sdt_complete_;
-
-    std::unique_ptr<SDTProcessor> sdt_proc_;
+    std::unique_ptr<SDTProcessor> this_sdt_proc_, other_sdt_proc_;
 public:
-    StandardChannelScanner() : ChannelScanner(), filter_error_{false}
+    StandardChannelScanner() : ChannelScanner()
     {}
 
     void start(MultiScanner *multi_scanner) override;
@@ -93,11 +93,20 @@ private:
 
     void nit_filter_cb(int reason, std::shared_ptr<NITSection> section);
 
-    void sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section);
+    void this_sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section);
 
-    bool all_complete_or_error() const;
+    void other_sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section);
+
+    TableTracker::Result
+    sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section,
+            std::unique_ptr<SDTProcessor> &sdt_proc,
+            sdt_filter_ptr &sdt_filter,
+            TableTracker::Result &sdt_status,
+            const char *label);
 
     bool any_complete() const;
+
+    bool filter_trackers_complete() const;
 };
 
 }
