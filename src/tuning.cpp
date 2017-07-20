@@ -379,6 +379,14 @@ void TuningProperties::append_prop_priv(guint32 cmd, guint32 data)
     props_v_[l].u.data = data;
 }
 
+void TuningProperties::fix_props()
+{
+    if (props_v_.back().cmd != DTV_TUNE)
+        append_prop_priv(DTV_TUNE, 1);
+    props_.props = props_v_.data();
+    props_.num = props_v_.size();
+}
+
 Glib::Error TuningProperties::report_error(TuningError code, const char *desc)
 {
     char *s = g_strdup_printf("Tuning props error: %s", desc);

@@ -87,144 +87,9 @@ TerrestrialDeliverySystemDescriptor::transmission_mode() const
     return TRANSMISSION_MODE_AUTO;
 }
 
-/*
-struct code_rate_table_t {
-    fe_code_rate_t v;
-    const char *s;
-};
-
-static struct code_rate_table_t code_rate_table[] = {
-    { FEC_NONE, "NONE" },
-    { FEC_1_2, "1/2" },
-    { FEC_2_3, "2/3" },
-    { FEC_3_4, "3/4" },
-    { FEC_4_5, "4/5" },
-    { FEC_5_6, "5/6" },
-    { FEC_6_7, "6/7" },
-    { FEC_7_8, "7/8" },
-    { FEC_8_9, "8/9" },
-    { FEC_AUTO, "AUTO" },
-    { FEC_3_5, "3/5" },
-    { FEC_9_10, "9/10" },
-    { FEC_AUTO, NULL },
-};
-
-struct modulation_table_t {
-    fe_modulation_t v;
-    const char *s;
-};
-
-static struct modulation_table_t modulation_table[] = {
-    { QPSK, "QPSK" },
-    { QAM_16, "QAM16" },
-    { QAM_32, "QAM32" },
-    { QAM_64, "QAM64" },
-    { QAM_128, "QAM128" },
-    { QAM_256, "QAM256" },
-    { QAM_AUTO, "AUTO" },
-    { VSB_8, "8VSB" },
-    { VSB_16, "16VSB" },
-    { PSK_8, "8PSK" },
-    { APSK_16, "APSK16" },
-    { APSK_32, "APSK32" },
-    { DQPSK, "DQPSK" },
-    { QAM_AUTO, NULL },
-};
-
-struct guard_interval_table_t {
-    fe_guard_interval_t v;
-    const char *s;
-};
-
-static struct guard_interval_table_t guard_interval_table[] = {
-    { GUARD_INTERVAL_1_32, "1/32" },
-    { GUARD_INTERVAL_1_16, "1/16" },
-    { GUARD_INTERVAL_1_8, "1/8" },
-    { GUARD_INTERVAL_1_4, "1/4" },
-    { GUARD_INTERVAL_1_128, "1/128" },
-    { GUARD_INTERVAL_19_128, "19/128" },
-    { GUARD_INTERVAL_19_256, "19/256" },
-    { GUARD_INTERVAL_AUTO, "AUTO" },
-    { GUARD_INTERVAL_AUTO, NULL },
-};
-
-struct hierarchy_table_t {
-    fe_hierarchy_t v;
-    const char *s;
-};
-
-static struct hierarchy_table_t hierarchy_table[] = {
-    { HIERARCHY_NONE, "NONE" },
-    { HIERARCHY_1, "1" },
-    { HIERARCHY_2, "2" },
-    { HIERARCHY_4, "4" },
-    { HIERARCHY_AUTO, "AUTO" },
-    { HIERARCHY_AUTO, NULL },
-};
-
-struct transmission_mode_table_t {
-    fe_transmit_mode_t v;
-    const char *s;
-};
-
-static struct transmission_mode_table_t transmission_mode_table[] = {
-    { TRANSMISSION_MODE_2K, "2K"},
-    { TRANSMISSION_MODE_8K, "8K"},
-    { TRANSMISSION_MODE_4K, "4K"},
-    { TRANSMISSION_MODE_1K, "1K"},
-    { TRANSMISSION_MODE_16K, "16K"},
-    { TRANSMISSION_MODE_32K, "32K"},
-    { TRANSMISSION_MODE_AUTO, "AUTO"},
-    { TRANSMISSION_MODE_AUTO, NULL}
-};
-
-struct roll_off_table_t {
-    fe_rolloff_t v;
-    const char *s;
-};
-
-static struct roll_off_table_t roll_off_table[] = {
-    { ROLLOFF_35, "35"},
-    { ROLLOFF_20, "20"},
-    { ROLLOFF_25, "25"},
-    { ROLLOFF_AUTO, "AUTO"},
-    { ROLLOFF_AUTO, NULL}
-};
-
-struct generic_table_t { int val; const char *name; };
-
-static const char *
-lookup_prop_name(gconstpointer table_addr, int val)
-{
-    generic_table_t const * table = (generic_table_t const *) table_addr;
-    int n;
-
-    for (n = 0; table[n].name != NULL; ++n)
-    {
-        if (table[n].val == val)
-            return table[n].name;
-    }
-    return "AUTO";
-}
-*/
-
 TuningProperties *
 TerrestrialDeliverySystemDescriptor::get_tuning_properties() const
 {
-    /*
-    int bw = bandwidth();
-    char *bw_s = (bw == 1712000) ? g_strdup("1.712") :
-            g_strdup_printf("%d", bw / 1000000);
-    g_print("T %d %sMHz %s %s %s %s %s %s\n",
-            centre_frequency(),
-            bw_s,
-            lookup_prop_name(code_rate_table, code_rate_hp()),
-            lookup_prop_name(code_rate_table, code_rate_lp()),
-            lookup_prop_name(modulation_table, constellation()),
-            lookup_prop_name(transmission_mode_table, transmission_mode()),
-            lookup_prop_name(guard_interval_table, guard_interval()),
-            lookup_prop_name(hierarchy_table, hierarchy()));
-    */
     return new TuningProperties({
         { DTV_DELIVERY_SYSTEM, SYS_DVBT },
         { DTV_FREQUENCY, centre_frequency()},
@@ -240,7 +105,7 @@ TerrestrialDeliverySystemDescriptor::get_tuning_properties() const
     return new TuningProperties({
         { DTV_DELIVERY_SYSTEM, SYS_DVBT },
         { DTV_FREQUENCY, centre_frequency()},
-        //{ DTV_BANDWIDTH_HZ, BANDWIDTH_AUTO },
+        { DTV_BANDWIDTH_HZ, bandwidth() },
         { DTV_MODULATION, QAM_AUTO },
         { DTV_HIERARCHY, HIERARCHY_AUTO },
         { DTV_CODE_RATE_HP, FEC_AUTO },

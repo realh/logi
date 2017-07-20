@@ -38,7 +38,6 @@ std::shared_ptr<TuningProperties> DvbtTuningIterator::next()
             {DTV_DELIVERY_SYSTEM, SYS_DVBT},
             {DTV_FREQUENCY, current_},
             {DTV_BANDWIDTH_HZ, bandwidth_},
-            {DTV_TUNE, 1},
         });
 
     current_ += step_;

@@ -102,11 +102,7 @@ private:
     // Private version doesn't update props_
     void append_prop_priv(guint32 cmd, guint32 data);
 
-    void fix_props()
-    {
-        props_.props = props_v_.data();
-        props_.num = props_v_.size();
-    }
+    void fix_props();
 
     /**
      * @div: Value to divide frequency by to get MHz.
