@@ -113,34 +113,30 @@ void MultiScanner::next()
     {
         std::shared_ptr<TuningProperties> props = nullptr;
         current_ts_data_ = nullptr;
+        std::uint32_t eq;
 
         // First look for any discovered (in NIT) transports that haven't been
         // scanned yet.
         for (auto &tsdat: ts_data_)
         {
             if (tsdat.second.get_scan_status() == TransportStreamData::PENDING
-                    && (props = tsdat.second.get_tuning()) != nullptr)
+                    && (props = tsdat.second.get_tuning()) != nullptr
+                    && !scanned_equivalences_.count
+                        (eq = props->get_equivalence_value()))
             {
                 current_ts_data_ = &tsdat.second;
-                g_print("* Next is discovered\n");
                 break;
             }
         }
 
         // If there's nothing to be scanned in NIT go through the iterator.
-        // This loops skips those from iterator which have been discovered.
         if (!props)
         {
             do
             {
                 props = iter_->next();
-            } while (props && std::find_if(ts_data_.begin(), ts_data_.end(),
-                [&props](const std::pair<std::uint16_t, TransportStreamData> &t)
-                {
-                    auto tuning = t.second.get_tuning();
-                    return tuning && *tuning == *props;
-                }) != ts_data_.end());
-            if (props) g_print("* Next is from iterator\n");
+            } while (props && scanned_equivalences_.count
+                    (eq = props->get_equivalence_value()));
         }
 
         if (!props)
@@ -149,7 +145,8 @@ void MultiScanner::next()
             return;
         }
 
-        g_print("Tuning to %s... ", props->linuxtv_description().c_str());
+        scanned_equivalences_.insert(eq);
+        g_print("Tuning to %s... ", props->describe().c_str());
         try
         {
             rcv_->tune(props, 5000);

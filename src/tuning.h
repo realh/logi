@@ -70,7 +70,13 @@ public:
      * Returns: Whether the properties are equivalent. Only checks a few key
      * properties, and frequencies are rounded.
      */
-    bool operator==(const TuningProperties &other);
+    bool operator==(const TuningProperties &other) const;
+
+    /**
+     * Returns: A rounded frequency or'd with other bits for testing
+     * equivalence.
+     */
+    std::uint32_t get_equivalence_value() const;
 
     struct dtv_properties const *get_props() const
     {

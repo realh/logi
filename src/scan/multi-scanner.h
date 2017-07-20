@@ -58,6 +58,8 @@ private:
     std::map<std::uint16_t, TransportStreamData> ts_data_;
     TransportStreamData *current_ts_data_;
     std::map<std::uint16_t, ServiceData> service_data_;
+    // Used to avoid trying to scan the same channel more than once
+    std::set<std::uint32_t> scanned_equivalences_;
 public:
     MultiScanner(std::shared_ptr<Receiver> rcv,
             std::shared_ptr<ChannelScanner> channel_scanner,

@@ -29,6 +29,87 @@
 namespace logi
 {
 
+struct prop_table_t_ {
+    std::uint32_t v;
+    const char *s;
+};
+
+static struct prop_table_t_ code_rate_table[] = {
+    { FEC_NONE, "NONE" },
+    { FEC_1_2, "1/2" },
+    { FEC_2_3, "2/3" },
+    { FEC_3_4, "3/4" },
+    { FEC_4_5, "4/5" },
+    { FEC_5_6, "5/6" },
+    { FEC_6_7, "6/7" },
+    { FEC_7_8, "7/8" },
+    { FEC_8_9, "8/9" },
+    { FEC_AUTO, "AUTO" },
+    { FEC_3_5, "3/5" },
+    { FEC_9_10, "9/10" },
+    { FEC_AUTO, NULL },
+};
+
+static struct prop_table_t_ modulation_table[] = {
+    { QPSK, "QPSK" },
+    { QAM_16, "QAM16" },
+    { QAM_32, "QAM32" },
+    { QAM_64, "QAM64" },
+    { QAM_128, "QAM128" },
+    { QAM_256, "QAM256" },
+    { QAM_AUTO, "AUTO" },
+    { VSB_8, "8VSB" },
+    { VSB_16, "16VSB" },
+    { PSK_8, "8PSK" },
+    { APSK_16, "APSK16" },
+    { APSK_32, "APSK32" },
+    { DQPSK, "DQPSK" },
+    { QAM_AUTO, NULL },
+};
+
+static struct prop_table_t_ guard_interval_table[] = {
+    { GUARD_INTERVAL_1_32, "1/32" },
+    { GUARD_INTERVAL_1_16, "1/16" },
+    { GUARD_INTERVAL_1_8, "1/8" },
+    { GUARD_INTERVAL_1_4, "1/4" },
+    { GUARD_INTERVAL_1_128, "1/128" },
+    { GUARD_INTERVAL_19_128, "19/128" },
+    { GUARD_INTERVAL_19_256, "19/256" },
+    { GUARD_INTERVAL_AUTO, "AUTO" },
+    { GUARD_INTERVAL_AUTO, NULL },
+};
+
+static struct prop_table_t_ hierarchy_table[] = {
+    { HIERARCHY_NONE, "NONE" },
+    { HIERARCHY_1, "1" },
+    { HIERARCHY_2, "2" },
+    { HIERARCHY_4, "4" },
+    { HIERARCHY_AUTO, "AUTO" },
+    { HIERARCHY_AUTO, NULL },
+};
+
+static struct prop_table_t_ transmission_mode_table[] = {
+    { TRANSMISSION_MODE_2K, "2K"},
+    { TRANSMISSION_MODE_8K, "8K"},
+    { TRANSMISSION_MODE_4K, "4K"},
+    { TRANSMISSION_MODE_1K, "1K"},
+    { TRANSMISSION_MODE_16K, "16K"},
+    { TRANSMISSION_MODE_32K, "32K"},
+    { TRANSMISSION_MODE_AUTO, "AUTO"},
+    { TRANSMISSION_MODE_AUTO, NULL}
+};
+
+static struct prop_table_t_ roll_off_table[] = {
+    { ROLLOFF_35, "35"},
+    { ROLLOFF_20, "20"},
+    { ROLLOFF_25, "25"},
+    { ROLLOFF_AUTO, "AUTO"},
+    { ROLLOFF_AUTO, NULL}
+};
+
+using prop_map_t = std::map<std::uint32_t, std::uint32_t>;
+
+
 TuningProperties::TuningProperties(const char *s)
 {
     if (s[0] != 'S')
@@ -108,7 +189,7 @@ TuningProperties &TuningProperties::operator=(TuningProperties &&other)
     return *this;
 }
 
-bool TuningProperties::operator==(const TuningProperties &other)
+bool TuningProperties::operator==(const TuningProperties &other) const
 {
     fe_delivery_system_t t1, t2;
     guint32 f1, f2;
@@ -119,6 +200,19 @@ bool TuningProperties::operator==(const TuningProperties &other)
     other.query_key_props(t2, f2, v2, d2);
 
     return t1 == t2 && (f1 / d1 / 2 == f2 / d2 / 2) && v1 && v2;
+}
+
+std::uint32_t TuningProperties::get_equivalence_value() const
+{
+    fe_delivery_system_t t1;
+    guint32 f1;
+    fe_sec_voltage_t v1;
+    guint32 d1;
+
+    query_key_props(t1, f1, v1, d1);
+    bool gen2 = d1 == SYS_DVBT2 || d1 == SYS_DVBS2;
+
+    return (f1 / d1 / 2) | (v1 << 28) | (gen2 ? (1 << 31) : 0);
 }
 
 std::string TuningProperties::describe() const
@@ -307,19 +401,6 @@ guint32 TuningProperties::parse_code_rate(const char *v, const char *s)
 
 guint32 TuningProperties::parse_roll_off(const char *v, const char *s)
 {
-    static const struct
-    {
-        fe_rolloff_t v;
-        const char *s;
-    } roll_off_table[] =
-    {
-        { ROLLOFF_35, "35"},
-        { ROLLOFF_20, "20"},
-        { ROLLOFF_25, "25"},
-        { ROLLOFF_AUTO, "AUTO"},
-        { ROLLOFF_AUTO, NULL}
-    };
-
     int n;
 
     for (n = 0; roll_off_table[n].s; ++n)
@@ -403,86 +484,6 @@ Glib::Error TuningProperties::report_parse_error(const char *desc,
     g_free(s);
     return err;
 }
-
-struct prop_table_t_ {
-    std::uint32_t v;
-    const char *s;
-};
-
-static struct prop_table_t_ code_rate_table[] = {
-    { FEC_NONE, "NONE" },
-    { FEC_1_2, "1/2" },
-    { FEC_2_3, "2/3" },
-    { FEC_3_4, "3/4" },
-    { FEC_4_5, "4/5" },
-    { FEC_5_6, "5/6" },
-    { FEC_6_7, "6/7" },
-    { FEC_7_8, "7/8" },
-    { FEC_8_9, "8/9" },
-    { FEC_AUTO, "AUTO" },
-    { FEC_3_5, "3/5" },
-    { FEC_9_10, "9/10" },
-    { FEC_AUTO, NULL },
-};
-
-static struct prop_table_t_ modulation_table[] = {
-    { QPSK, "QPSK" },
-    { QAM_16, "QAM16" },
-    { QAM_32, "QAM32" },
-    { QAM_64, "QAM64" },
-    { QAM_128, "QAM128" },
-    { QAM_256, "QAM256" },
-    { QAM_AUTO, "AUTO" },
-    { VSB_8, "8VSB" },
-    { VSB_16, "16VSB" },
-    { PSK_8, "8PSK" },
-    { APSK_16, "APSK16" },
-    { APSK_32, "APSK32" },
-    { DQPSK, "DQPSK" },
-    { QAM_AUTO, NULL },
-};
-
-static struct prop_table_t_ guard_interval_table[] = {
-    { GUARD_INTERVAL_1_32, "1/32" },
-    { GUARD_INTERVAL_1_16, "1/16" },
-    { GUARD_INTERVAL_1_8, "1/8" },
-    { GUARD_INTERVAL_1_4, "1/4" },
-    { GUARD_INTERVAL_1_128, "1/128" },
-    { GUARD_INTERVAL_19_128, "19/128" },
-    { GUARD_INTERVAL_19_256, "19/256" },
-    { GUARD_INTERVAL_AUTO, "AUTO" },
-    { GUARD_INTERVAL_AUTO, NULL },
-};
-
-static struct prop_table_t_ hierarchy_table[] = {
-    { HIERARCHY_NONE, "NONE" },
-    { HIERARCHY_1, "1" },
-    { HIERARCHY_2, "2" },
-    { HIERARCHY_4, "4" },
-    { HIERARCHY_AUTO, "AUTO" },
-    { HIERARCHY_AUTO, NULL },
-};
-
-static struct prop_table_t_ transmission_mode_table[] = {
-    { TRANSMISSION_MODE_2K, "2K"},
-    { TRANSMISSION_MODE_8K, "8K"},
-    { TRANSMISSION_MODE_4K, "4K"},
-    { TRANSMISSION_MODE_1K, "1K"},
-    { TRANSMISSION_MODE_16K, "16K"},
-    { TRANSMISSION_MODE_32K, "32K"},
-    { TRANSMISSION_MODE_AUTO, "AUTO"},
-    { TRANSMISSION_MODE_AUTO, NULL}
-};
-
-static struct prop_table_t_ roll_off_table[] = {
-    { ROLLOFF_35, "35"},
-    { ROLLOFF_20, "20"},
-    { ROLLOFF_25, "25"},
-    { ROLLOFF_AUTO, "AUTO"},
-    { ROLLOFF_AUTO, NULL}
-};
-
-using prop_map_t = std::map<std::uint32_t, std::uint32_t>;
 
 static const char *
 lookup_prop_val_name(prop_map_t &m, const prop_table_t_ *table,
