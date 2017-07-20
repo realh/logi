@@ -75,7 +75,7 @@ fe_guard_interval_t TerrestrialDeliverySystemDescriptor::guard_interval() const
 fe_transmit_mode_t
 TerrestrialDeliverySystemDescriptor::transmission_mode() const
 {
-    switch ((word8(8) & 0x60) >> 1)
+    switch ((word8(8) & 6) >> 1)
     {
         case 0:
             return TRANSMISSION_MODE_2K;

@@ -82,6 +82,11 @@ public:
      */
     std::string describe() const;
 
+    /**
+     * Returns: A string in the format traditionally used by Linux DVB apps.
+     */
+    std::string linuxtv_description() const;
+
     void clear();
 
     static GQuark get_error_quark();

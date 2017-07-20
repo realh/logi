@@ -108,6 +108,7 @@ void MultiScanner::next()
     }
     */
 
+    // Loop in case tune fails
     while (true)
     {
         std::shared_ptr<TuningProperties> props = nullptr;
@@ -121,6 +122,7 @@ void MultiScanner::next()
                     && (props = tsdat.second.get_tuning()) != nullptr)
             {
                 current_ts_data_ = &tsdat.second;
+                g_print("* Next is discovered\n");
                 break;
             }
         }
@@ -138,6 +140,7 @@ void MultiScanner::next()
                     auto tuning = t.second.get_tuning();
                     return tuning && *tuning == *props;
                 }) != ts_data_.end());
+            if (props) g_print("* Next is from iterator\n");
         }
 
         if (!props)
@@ -146,7 +149,7 @@ void MultiScanner::next()
             return;
         }
 
-        g_print("Tuning to %s... ", props->describe().c_str());
+        g_print("Tuning to %s... ", props->linuxtv_description().c_str());
         try
         {
             rcv_->tune(props, 10000);

@@ -20,7 +20,9 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <memory>
+#include <sstream>
 
 #include "tuning.h"
 
@@ -394,4 +396,151 @@ Glib::Error TuningProperties::report_parse_error(const char *desc,
     return err;
 }
 
+struct prop_table_t_ {
+    std::uint32_t v;
+    const char *s;
 };
+
+static struct prop_table_t_ code_rate_table[] = {
+    { FEC_NONE, "NONE" },
+    { FEC_1_2, "1/2" },
+    { FEC_2_3, "2/3" },
+    { FEC_3_4, "3/4" },
+    { FEC_4_5, "4/5" },
+    { FEC_5_6, "5/6" },
+    { FEC_6_7, "6/7" },
+    { FEC_7_8, "7/8" },
+    { FEC_8_9, "8/9" },
+    { FEC_AUTO, "AUTO" },
+    { FEC_3_5, "3/5" },
+    { FEC_9_10, "9/10" },
+    { FEC_AUTO, NULL },
+};
+
+static struct prop_table_t_ modulation_table[] = {
+    { QPSK, "QPSK" },
+    { QAM_16, "QAM16" },
+    { QAM_32, "QAM32" },
+    { QAM_64, "QAM64" },
+    { QAM_128, "QAM128" },
+    { QAM_256, "QAM256" },
+    { QAM_AUTO, "AUTO" },
+    { VSB_8, "8VSB" },
+    { VSB_16, "16VSB" },
+    { PSK_8, "8PSK" },
+    { APSK_16, "APSK16" },
+    { APSK_32, "APSK32" },
+    { DQPSK, "DQPSK" },
+    { QAM_AUTO, NULL },
+};
+
+static struct prop_table_t_ guard_interval_table[] = {
+    { GUARD_INTERVAL_1_32, "1/32" },
+    { GUARD_INTERVAL_1_16, "1/16" },
+    { GUARD_INTERVAL_1_8, "1/8" },
+    { GUARD_INTERVAL_1_4, "1/4" },
+    { GUARD_INTERVAL_1_128, "1/128" },
+    { GUARD_INTERVAL_19_128, "19/128" },
+    { GUARD_INTERVAL_19_256, "19/256" },
+    { GUARD_INTERVAL_AUTO, "AUTO" },
+    { GUARD_INTERVAL_AUTO, NULL },
+};
+
+static struct prop_table_t_ hierarchy_table[] = {
+    { HIERARCHY_NONE, "NONE" },
+    { HIERARCHY_1, "1" },
+    { HIERARCHY_2, "2" },
+    { HIERARCHY_4, "4" },
+    { HIERARCHY_AUTO, "AUTO" },
+    { HIERARCHY_AUTO, NULL },
+};
+
+static struct prop_table_t_ transmission_mode_table[] = {
+    { TRANSMISSION_MODE_2K, "2K"},
+    { TRANSMISSION_MODE_8K, "8K"},
+    { TRANSMISSION_MODE_4K, "4K"},
+    { TRANSMISSION_MODE_1K, "1K"},
+    { TRANSMISSION_MODE_16K, "16K"},
+    { TRANSMISSION_MODE_32K, "32K"},
+    { TRANSMISSION_MODE_AUTO, "AUTO"},
+    { TRANSMISSION_MODE_AUTO, NULL}
+};
+
+static struct prop_table_t_ roll_off_table[] = {
+    { ROLLOFF_35, "35"},
+    { ROLLOFF_20, "20"},
+    { ROLLOFF_25, "25"},
+    { ROLLOFF_AUTO, "AUTO"},
+    { ROLLOFF_AUTO, NULL}
+};
+
+using prop_map_t = std::map<std::uint32_t, std::uint32_t>;
+
+static const char *
+lookup_prop_val_name(prop_map_t &m, const prop_table_t_ *table,
+        std::uint32_t key)
+{
+    if (!m.count(key))
+        return "AUTO";
+    auto val = m[key];
+    unsigned n;
+    for (n = 0; table[n].s != NULL; ++n)
+    {
+        if (table[n].v == val)
+            return table[n].s;
+    }
+    return "AUTO";
+}
+
+static std::string dvbt_description(prop_map_t &m)
+{
+    std::ostringstream s;
+
+    if (m[DTV_DELIVERY_SYSTEM] == SYS_DVBT2)
+    {
+        s << "T2";
+        if (m.count(DTV_STREAM_ID))
+            s << " " << m[DTV_STREAM_ID];
+        else
+            s << " 0";
+        /* We can't currently read system_id from tuner */
+        s << " 0";
+    }
+    else
+    {
+        s << "T";
+    }
+    s << " " << m[DTV_FREQUENCY];
+    int bw = m[DTV_BANDWIDTH_HZ];
+
+    s << " " << ((bw == 1712000) ? 1.712 : bw / 1000000) << "MHZ";
+    s << " " << lookup_prop_val_name(m, code_rate_table, DTV_CODE_RATE_HP);
+    s << " " << lookup_prop_val_name(m, code_rate_table, DTV_CODE_RATE_LP);
+    s << " " << lookup_prop_val_name(m, modulation_table, DTV_MODULATION);
+    s << " " << lookup_prop_val_name(m, transmission_mode_table,
+            DTV_TRANSMISSION_MODE);
+    s << " " << lookup_prop_val_name(m, guard_interval_table,
+            DTV_GUARD_INTERVAL);
+    s << " " << lookup_prop_val_name(m, hierarchy_table, DTV_HIERARCHY);
+    return s.str();
+}
+
+std::string TuningProperties::linuxtv_description() const
+{
+    prop_map_t pmap;
+    for (unsigned n = 0; n < props_.num; ++n)
+    {
+        pmap[props_v_[n].cmd] = props_v_[n].u.data;
+    }
+    auto ds = pmap[DTV_DELIVERY_SYSTEM];
+    if (ds == SYS_DVBT || ds == SYS_DVBT2)
+    {
+        return dvbt_description(pmap);
+    }
+    else
+    {
+        return describe();
+    }
+}
+
+}
