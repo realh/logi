@@ -32,26 +32,16 @@ public:
     constexpr static std::uint8_t SATELLITE_DELIVERY_SYSTEM = 0x43;
     constexpr static std::uint8_t SERVICE = 0x48;
     constexpr static std::uint8_t TERRESTRIAL_DELIVERY_SYSTEM = 0x5A;
-protected:
-    unsigned end_;
+    constexpr static std::uint8_t EXTENSION = 0x7F;
 public:
-    Descriptor(const SectionData &sec, unsigned offset, unsigned end) :
-        SectionData(sec.get_data(), offset), end_(end)
+    Descriptor(const SectionData &sec, unsigned offset) :
+        SectionData(sec.get_data(), offset)
     {}
 
     /**
      * Some subclasses require polymorphism.
      */
     virtual ~Descriptor() = default;
-
-    /**
-     * Descriptor(const Descriptor &):
-     * This is intended to be used to create a specific typed descriptor from a
-     * generic one rather than as a copy constructor.
-     */
-    Descriptor(const Descriptor &source) :
-        SectionData(source.get_data(), source.offset_), end_(source.end_)
-    {}
 
     std::uint8_t tag() const
     {
@@ -61,6 +51,19 @@ public:
     std::uint8_t length() const
     {
         return word8(1);
+    }
+};
+
+class ExtensionDescriptor: public Descriptor
+{
+public:
+    ExtensionDescriptor(const SectionData &sec, unsigned offset) :
+        Descriptor(sec, offset)
+    {}
+
+    std::uint8_t tag_extension() const
+    {
+        return word8(2);
     }
 };
 

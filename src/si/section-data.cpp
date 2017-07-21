@@ -33,7 +33,7 @@ std::vector<Descriptor> SectionData::get_descriptors(unsigned o) const
     {
         unsigned e = o + word8(o + 1) + 2;
 
-        descs.emplace_back(Descriptor(*this, o + offset_, e + offset_));
+        descs.emplace_back(Descriptor(*this, o + offset_));
         o = e;
     }
     return descs;
