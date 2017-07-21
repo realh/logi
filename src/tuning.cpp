@@ -20,7 +20,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <map>
 #include <memory>
 #include <sstream>
 
@@ -107,7 +106,6 @@ static struct prop_table_t_ roll_off_table[] = {
     { ROLLOFF_AUTO, NULL}
 };
 
-using prop_map_t = std::map<std::uint32_t, std::uint32_t>;
 
 
 TuningProperties::TuningProperties(const char *s)
@@ -447,7 +445,16 @@ guint32 TuningProperties::parse_modulation(const char *v, const char *s)
 
 void TuningProperties::append_prop(guint32 cmd, guint32 data)
 {
-    append_prop_priv(cmd, data);
+    auto &back = props_v_.back();
+    if (back.cmd == DTV_TUNE)
+    {
+        back.cmd = cmd;
+        back.u.data = data;
+    }
+    else
+    {
+        append_prop_priv(cmd, data);
+    }
     fix_props();
 }
 
@@ -486,8 +493,8 @@ Glib::Error TuningProperties::report_parse_error(const char *desc,
 }
 
 static const char *
-lookup_prop_val_name(prop_map_t &m, const prop_table_t_ *table,
-        std::uint32_t key)
+lookup_prop_val_name(TuningProperties::prop_map_t &m,
+        const prop_table_t_ *table, std::uint32_t key)
 {
     if (!m.count(key))
         return "AUTO";
@@ -501,7 +508,7 @@ lookup_prop_val_name(prop_map_t &m, const prop_table_t_ *table,
     return "AUTO";
 }
 
-static std::string dvbt_description(prop_map_t &m)
+static std::string dvbt_description(TuningProperties::prop_map_t &m)
 {
     std::ostringstream s;
 
@@ -536,11 +543,7 @@ static std::string dvbt_description(prop_map_t &m)
 
 std::string TuningProperties::linuxtv_description() const
 {
-    prop_map_t pmap;
-    for (unsigned n = 0; n < props_.num; ++n)
-    {
-        pmap[props_v_[n].cmd] = props_v_[n].u.data;
-    }
+    auto pmap = map_props();
     auto ds = pmap[DTV_DELIVERY_SYSTEM];
     if (ds == SYS_DVBT || ds == SYS_DVBT2)
     {
@@ -550,6 +553,28 @@ std::string TuningProperties::linuxtv_description() const
     {
         return describe();
     }
+}
+
+TuningProperties::prop_map_t &TuningProperties::map_props(prop_map_t &m) const
+{
+    for (unsigned n = 0; n < props_.num; ++n)
+    {
+        if (props_v_[n].cmd != DTV_TUNE)
+            m[props_v_[n].cmd] = props_v_[n].u.data;
+    }
+    return m;
+}
+
+TuningProperties &TuningProperties::merge(const TuningProperties &other)
+{
+    auto m = other.map_props();
+    map_props(m);
+    props_v_.clear();
+    for (const auto &p: m)
+    {
+        append_prop_priv(p.first, p.second);
+    }
+    return *this;
 }
 
 }

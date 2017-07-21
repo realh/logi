@@ -58,9 +58,15 @@ public:
     fe_code_rate_t code_rate_lp() const
     { return code_rate(((word8(8) & 0xe0) >> 5) + 1); }
 
-    fe_guard_interval_t guard_interval() const;
+    fe_guard_interval_t guard_interval() const
+    {
+        return DeliverySystemDescriptor::guard_interval((word8(8) & 0x18) >> 3);
+    }
 
-    fe_transmit_mode_t transmission_mode() const;
+    fe_transmit_mode_t transmission_mode() const
+    {
+        return DeliverySystemDescriptor::transmission_mode((word8(8) & 6) >> 1);
+    }
 
     bool other_frequency() const { return (word8(8) & 1) != 0; }
 

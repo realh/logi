@@ -20,6 +20,7 @@
 */
 
 #include <initializer_list>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -102,13 +103,35 @@ public:
         return props_.num;
     }
 
-    // Public version also updates props_
+    // Public version also updates props_ and makes sure DTV_TUNE is last
     void append_prop(guint32 cmd, guint32 data);
+
+    /**
+     * Merges other properties with this.
+     * this has priority.
+     * Returns: reference to this
+     */
+    TuningProperties &merge(const TuningProperties &other);
+
+    using prop_map_t = std::map<std::uint32_t, std::uint32_t>;
 private:
     // Private version doesn't update props_
     void append_prop_priv(guint32 cmd, guint32 data);
 
     void fix_props();
+
+    /**
+     * Adds this' properties to m, excluding DTV_TUNE.
+     * Returns: m
+     */
+    prop_map_t &map_props(prop_map_t &m) const;
+
+    /// Creates a new map of this' properties excluding DTV_TUNE.
+    prop_map_t map_props() const
+    {
+        prop_map_t m;
+        return map_props(m);
+    }
 
     /**
      * @div: Value to divide frequency by to get MHz.

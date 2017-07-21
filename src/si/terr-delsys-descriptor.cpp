@@ -56,37 +56,6 @@ fe_hierarchy_t TerrestrialDeliverySystemDescriptor::hierarchy() const
     return HIERARCHY_AUTO;
 }
 
-fe_guard_interval_t TerrestrialDeliverySystemDescriptor::guard_interval() const
-{
-    switch ((word8(8) & 0x18) >> 3)
-    {
-        case 0:
-            return GUARD_INTERVAL_1_32;
-        case 1:
-            return GUARD_INTERVAL_1_16;
-        case 2:
-            return GUARD_INTERVAL_1_8;
-        case 3:
-            return GUARD_INTERVAL_1_4;
-    }
-    return GUARD_INTERVAL_AUTO;
-}
-
-fe_transmit_mode_t
-TerrestrialDeliverySystemDescriptor::transmission_mode() const
-{
-    switch ((word8(8) & 6) >> 1)
-    {
-        case 0:
-            return TRANSMISSION_MODE_2K;
-        case 1:
-            return TRANSMISSION_MODE_8K;
-        case 2:
-            return TRANSMISSION_MODE_4K;
-    }
-    return TRANSMISSION_MODE_AUTO;
-}
-
 TuningProperties *
 TerrestrialDeliverySystemDescriptor::get_tuning_properties() const
 {

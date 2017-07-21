@@ -37,6 +37,10 @@ public:
 
     static fe_code_rate_t code_rate(std::uint8_t r);
 
+    static fe_guard_interval_t guard_interval(std::uint8_t g);
+
+    static fe_transmit_mode_t transmission_mode(std::uint8_t t);
+
     /// Result is heap-allocated
     virtual class TuningProperties *get_tuning_properties() const = 0;
 };

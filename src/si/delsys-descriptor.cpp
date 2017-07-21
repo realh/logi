@@ -34,6 +34,10 @@ std::uint32_t DeliverySystemDescriptor::bandwidth(std::uint8_t b)
             return 6000000;
         case 3:
             return 5000000;
+        case 4:
+            return 10000000;
+        case 5:
+            return 1712000;
     }
     return 8000000;
 }
@@ -62,6 +66,49 @@ fe_code_rate_t DeliverySystemDescriptor::code_rate(std::uint8_t r)
             return FEC_9_10;
     }
     return FEC_AUTO;
+}
+
+fe_guard_interval_t DeliverySystemDescriptor::guard_interval(std::uint8_t g)
+{
+    switch (g)
+    {
+        case 0:
+            return GUARD_INTERVAL_1_32;
+        case 1:
+            return GUARD_INTERVAL_1_16;
+        case 2:
+            return GUARD_INTERVAL_1_8;
+        case 3:
+            return GUARD_INTERVAL_1_4;
+        case 4:
+            return GUARD_INTERVAL_1_128;
+        case 5:
+            return GUARD_INTERVAL_19_128;
+        case 6:
+            return GUARD_INTERVAL_19_256;
+    }
+    return GUARD_INTERVAL_AUTO;
+}
+
+fe_transmit_mode_t
+DeliverySystemDescriptor::transmission_mode(std::uint8_t t)
+{
+    switch (t)
+    {
+        case 0:
+            return TRANSMISSION_MODE_2K;
+        case 1:
+            return TRANSMISSION_MODE_8K;
+        case 2:
+            return TRANSMISSION_MODE_4K;
+        case 3:
+            return TRANSMISSION_MODE_1K;
+        case 4:
+            return TRANSMISSION_MODE_16K;
+        case 5:
+            return TRANSMISSION_MODE_32K;
+    }
+    return TRANSMISSION_MODE_AUTO;
 }
 
 }

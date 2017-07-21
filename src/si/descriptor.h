@@ -39,6 +39,14 @@ public:
     {}
 
     /**
+     * This is intended to be used for creating subclasses rather than as a
+     * copy constructor.
+     */
+    Descriptor(const Descriptor &desc) :
+        SectionData(desc.get_data(), desc.get_offset())
+    {}
+
+    /**
      * Some subclasses require polymorphism.
      */
     virtual ~Descriptor() = default;
@@ -57,6 +65,9 @@ public:
 class ExtensionDescriptor: public Descriptor
 {
 public:
+    ExtensionDescriptor(const Descriptor &desc) : Descriptor(desc)
+    {}
+
     ExtensionDescriptor(const SectionData &sec, unsigned offset) :
         Descriptor(sec, offset)
     {}
