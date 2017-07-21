@@ -64,6 +64,8 @@ private:
     NwMap networks_;
 
     std::unique_ptr<SDTProcessor> this_sdt_proc_, other_sdt_proc_;
+
+    bool have_current_ts_id_;
 public:
     StandardChannelScanner() : ChannelScanner()
     {}

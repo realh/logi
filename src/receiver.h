@@ -2,7 +2,7 @@
 
 /*
     logi - A DVB DVR designed for web-based clients.
-    Copyright (C) 2016 Tony Houghton <h@realh.co.uk>
+    Copyright (C) 2016-2017 Tony Houghton <h@realh.co.uk>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ namespace logi
  * A Receiver is associated with a #Frontend, but decoupled to allow for
  * frontends which support multiple types and therefore, presumably, multiple
  * tuners which can be used simultaneously. But I don't know how such frontends
- * works in practice.
+ * work in practice.
  */
 class Receiver
 {
@@ -84,6 +84,11 @@ public:
      * @timeout: In milliseconds.
      */
     void tune(std::shared_ptr<TuningProperties> tuning_props, guint timeout);
+
+    std::shared_ptr<TuningProperties> current_tuning()
+    {
+        return tuned_to_;
+    }
 
     /**
      * cancel:

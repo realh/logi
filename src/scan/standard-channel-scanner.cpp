@@ -49,6 +49,8 @@ void StandardChannelScanner::start(MultiScanner *multi_scanner)
         nwd.second->nit_proc->reset_tracker();
     }
 
+    have_current_ts_id_ = false;
+
     nit_filter_.reset(new SectionFilter<NITSection, StandardChannelScanner>(
             multi_scanner->get_receiver(), *this,
             &StandardChannelScanner::nit_filter_cb,
@@ -140,6 +142,19 @@ void StandardChannelScanner::nit_filter_cb(int reason,
 void StandardChannelScanner::this_sdt_filter_cb(int reason,
         std::shared_ptr<SDTSection> section)
 {
+    // Freeview HD channels' tuning frequencies are not given in NIT, so we can
+    // only get them by scanning through all channels and matching current
+    // frequency with ts_id found in SDT.
+    if (section && !have_current_ts_id_)
+    {
+        auto &ts = multi_scanner_->get_transport_stream_data(
+                section->transport_stream_id());
+        if (!ts.get_tuning())
+            ts.set_tuning(multi_scanner_->get_receiver()->current_tuning());
+        ts.set_scan_status(TransportStreamData::SCANNED);
+        have_current_ts_id_ = true;
+        g_print("Current ts_id %d\n", section->transport_stream_id());
+    }
     sdt_filter_cb(reason, section, this_sdt_proc_, this_sdt_filter_,
             this_sdt_status_, "this");
 }

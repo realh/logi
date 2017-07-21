@@ -71,7 +71,7 @@ public:
             tuning_ = std::shared_ptr<TuningProperties>(tuning);
     }
 
-    void set_tuning(std::shared_ptr<TuningProperties> &tuning)
+    void set_tuning(std::shared_ptr<TuningProperties> tuning)
     {
         if (!tuning_)
             tuning_ = tuning;

@@ -218,8 +218,12 @@ void MultiScanner::process_delivery_system_descriptor(std::uint16_t ts_id,
     // FIXME: Also need to support satellite later
     TerrestrialDeliverySystemDescriptor d(desc);
     auto &tsdat = get_transport_stream_data(ts_id);
-    tsdat.set_tuning(d.get_tuning_properties());
-    g_debug("    TS %d: %s", ts_id, tsdat.get_tuning()->describe().c_str());
+    auto tuning = d.get_tuning_properties();
+    if (!tsdat.get_tuning())
+        g_print("New TS %d: %s\n", ts_id, tuning->describe().c_str());
+    else
+        g_debug("    TS %d: %s", ts_id, tuning->describe().c_str());
+    tsdat.set_tuning(tuning);
 }
 
 void MultiScanner::process_service_descriptor(std::uint16_t ts_id,
@@ -248,12 +252,32 @@ bool MultiScanner::check_harvest()
 {
     if (!ts_data_.size() || !service_data_.size())
         return false;
+    g_print("Outstanding transports:\n");
+    for (const auto &ts: ts_data_)
+    {
+        if (ts.second.get_scan_status() == TransportStreamData::PENDING)
+            g_print("%d ", ts.first);
+    }
+    g_print("\n");
+    /*
+    g_print("Outstanding services:\n");
+    for (const auto &s: service_data_)
+    {
+        if (!s.second.get_scanned())
+            g_print("%d ", s.first);
+    }
+    g_print("\n");
+    */
     return std::all_of(ts_data_.begin(), ts_data_.end(),
         [](const std::pair<std::uint16_t, const TransportStreamData &> &ts)
-        { return ts.second.get_scan_status() != TransportStreamData::PENDING; })
+        {
+            return ts.second.get_scan_status() != TransportStreamData::PENDING;
+        });
+    /*
     && std::all_of(service_data_.begin(), service_data_.end(),
         [](const std::pair<std::uint16_t, const ServiceData &> &s)
         { return s.second.get_scanned(); });
+    */
 }
 
 }
