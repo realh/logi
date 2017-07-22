@@ -69,6 +69,7 @@ void Database::start()
         try
         {
             open();
+            ensure_sources_table();
         }
         catch (...)
         {
@@ -91,11 +92,25 @@ void Database::thread_main()
             auto stmt = statement_queue_.front();
             statement_queue_.pop();
             lk.unlock();
-            stmt->execute();
+            try
+            {
+                stmt->execute();
+            }
+            catch (std::exception &x)
+            {
+                Glib::signal_idle().connect([x]()->bool
+                {
+                    g_critical("Database error: %s", x.what());
+                    return false;
+                });
+            }
             lk.lock();
-            result_queue_.push(stmt);
-            Glib::signal_idle().connect
-                (sigc::mem_fun(*this, &Database::result_idle_callback));
+            if (stmt->has_result())
+            {
+                result_queue_.push(stmt);
+                Glib::signal_idle().connect
+                    (sigc::mem_fun(*this, &Database::result_idle_callback));
+            }
         }
     }
 }
@@ -120,6 +135,25 @@ bool Database::result_idle_callback()
         lk.lock();
     }
     return false;
+}
+
+void Database::ensure_tables(const char *source)
+{
+    std::string s(source);
+    queue_function([this, s]()
+    {
+        ensure_tables_callback(s.c_str());
+    });
+}
+
+void Database::ensure_tables_callback(const char *source)
+{
+    ensure_network_info_table(source);
+    ensure_transport_stream_info_table(source);
+    ensure_tuning_table(source);
+    ensure_service_id_table(source);
+    ensure_service_name_table(source);
+    ensure_service_provider_name_table(source);
 }
 
 }
