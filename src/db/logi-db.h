@@ -71,8 +71,8 @@ public:
         virtual void execute(ArgsVector &args) = 0;
     };
 
-    template<class Result, typename... Args>
-    using StatementPtr = std::shared_ptr<Statement<Result, Args...> >;
+    template<typename... Args>
+    using StatementPtr = std::shared_ptr<Statement<Args...> >;
 private:
     class CurriedStatementBase
     {
@@ -92,15 +92,15 @@ private:
     public:
         using ArgPtr = std::shared_ptr<std::tuple<Args...> >;
         using Slot = sigc::slot<void, Result>;
-        using Stmt = Statement<Result, Args...>;
+        using Q = Query<Result, Args...>;
               
-        CurriedQuery(Stmt &statement, ArgPtr args, Slot &callback)
-            : statement_(statement), args_(args), callback_(callback)
+        CurriedQuery(Q &query, ArgPtr args, Slot &callback)
+            : query_(query), args_(args), callback_(callback)
         {}
 
         virtual void execute() override
         {
-            result_ = statement_.query(*args_);
+            result_ = query_.query(*args_);
         }
 
         virtual void forward_result() override
@@ -113,7 +113,7 @@ private:
             return true;
         }
     private:
-        Stmt &statement_;
+        Q &query_;
         ArgPtr args_;
         Result result_;
         Slot callback_;
@@ -123,7 +123,7 @@ private:
     {
     public:
         using ArgPtr = std::shared_ptr<std::vector<std::tuple<Args...> > >;
-        using Stmt = StatementPtr<void, Args...>;
+        using Stmt = StatementPtr<Args...>;
               
         CurriedStatement(Stmt statement, ArgPtr args)
             : statement_(statement), args_(args)
@@ -211,43 +211,43 @@ public:
     /**
      * statement args: network_id, name
      */
-    virtual StatementPtr<void, id_t, Glib::ustring>
+    virtual StatementPtr<id_t, Glib::ustring>
         get_insert_network_info_statement(const char *source) = 0;
 
     /**
      * statement args: network_id, ts_id, tuning prop key, tuning prop value
      */
-    virtual StatementPtr<void, id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
         get_insert_tuning_statement(const char *source) = 0;
 
     /**
      * statement args: network_id, service_id, ts_id, service_type
      */
-    virtual StatementPtr<void, id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) = 0;
 
     /**
      * statement args: network_id, service_id, name
      */
-    virtual StatementPtr<void, id_t, id_t, Glib::ustring>
+    virtual StatementPtr<id_t, id_t, Glib::ustring>
         get_insert_service_name_statement(const char *source) = 0;
 
     /**
      * statement args: provider_name
      */
-    virtual StatementPtr<void, Glib::ustring>
+    virtual StatementPtr<Glib::ustring>
     get_insert_provider_name_statement(const char *source) = 0;
 
     /**
      * statement args: network_id, service_id, row_id from provider_name
      */
-    virtual StatementPtr<void, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t>
     get_insert_service_provider_name_statement(const char *source) = 0;
 
     /**
      * statement args: network_id, service_id, lcn
      */
-    virtual StatementPtr<void, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t>
     get_insert_primary_lcn_statement(const char *source) = 0;
 
     /**
@@ -255,19 +255,19 @@ public:
      * is called on the Glib main thread.
      */
     template<class Result, typename... Args>
-    void queue_query(StatementPtr<Result, Args...> statement,
+    void queue_query(QueryPtr<Result, Args...> query,
             std::shared_ptr<std::tuple<Args...> > args,
             sigc::slot<void, Result> &callback)
     {
         queue_statement(new CurriedQuery<Result, Args...>
-                (statement, args, callback));
+                (query, args, callback));
     }
 
     /**
      * Like queue_query but for a statement with multiple inputs and no result.
      */
     template<typename... Args>
-    void queue_statement(StatementPtr<void, Args...> statement,
+    void queue_statement(StatementPtr<Args...> statement,
             std::shared_ptr<std::vector<std::tuple<Args...> > > args)
     {
         queue_statement(new CurriedStatement<Args...>(statement, args));

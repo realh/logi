@@ -1,3 +1,4 @@
+add_subdirectory(db)
 add_subdirectory(scan)
 add_subdirectory(udev)
 

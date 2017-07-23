@@ -73,9 +73,69 @@ private:
 
         void bind(int pos, const Glib::ustring &val);
 
+        void fetch(int pos, std::uint32_t &val);
+
+        void fetch(int pos, Glib::ustring &val);
+
         void reset();
 
-        int step();
+        /// Returns true if result is SQLITE_DONE
+        bool step();
+
+        template<typename T1> std::tuple<T1> fetch_row()
+        {
+            T1 v1;
+            fetch(0, v1);
+            return {v1};
+        }
+
+        template<typename T1, typename T2> std::tuple<T1, T2> fetch_row()
+        {
+            T1 v1;
+            T2 v2;
+            fetch(0, v1);
+            fetch(1, v2);
+            return {v1, v2};
+        }
+
+        template<typename T1, typename T2, typename T3>
+        std::tuple<T1, T2, T3> fetch_row()
+        {
+            T1 v1;
+            T2 v2;
+            T3 v3;
+            fetch(0, v1);
+            fetch(1, v2);
+            fetch(2, v3);
+            return {v1, v2, v3};
+        }
+
+        template<typename T1, typename T2, typename T3, typename T4>
+        std::tuple<T1, T2, T3, T4> fetch_row()
+        {
+            T1 v1;
+            T2 v2;
+            T3 v3;
+            T4 v4;
+            fetch(0, v1);
+            fetch(1, v2);
+            fetch(2, v3);
+            fetch(3, v4);
+            return {v1, v2, v3, v4};
+        }
+
+        /// Takes an out parameter instead of returning a vector to enable
+        /// type deduction
+        template<typename... Args>
+        void fetch_rows(std::vector<std::tuple<Args...> > &v)
+        {
+            bool result;
+            do {
+                result = step();
+                v.push_back(fetch_row<Args...>());
+            } while (!result);
+            return v;
+        }
 
         /*
         template<typename T1>
@@ -113,25 +173,40 @@ private:
     };
 
     /// Uses template recursion to bind all args
-    template<std::size_t N, typename... Args>
-    class Binder
+    template<std::size_t N, typename... Args> class Binder
     {
-        Binder(Sqlite3StatementBase &s, const std::tuple<Args...> &tup)
+    public:
+        Binder(Sqlite3StatementBase &s, std::tuple<Args...> &tup)
         {
-            Binder<N - 1, Args...> b(tup);
-            s.bind(N + 1, std::get<N>(tup));
+            Binder<N - 1, Args...> b(s, tup);
+            s.bind(N + 1, std::get<N, Args...>(tup));
         }
     };
 
     /// Specialization of Binder to end recursion at 0
-    template<typename... Args>
-    class Binder<0, Args...>
+    template<typename... Args> class Binder<0, Args...>
     {
-        Binder(Sqlite3StatementBase &s, const std::tuple<Args...> &tup)
+    public:
+        Binder(Sqlite3StatementBase &s, std::tuple<Args...> &tup)
         {
-            s.bind(1, std::get<0>(tup));
+            s.bind(1, std::get<0, Args...>(tup));
         }
     };
+
+    /// Prepends column C of type T from sqlite result to tuple<Args...>,
+    /// making a tuple<T, Args...>
+    /*
+    template<std::size_t C, typename T, typename... Args> class Debinder
+    {
+        std::tuple<T, Args...> debind(Sqlite3StatementBase &s,
+                const std::tuple<Args...> tup) const
+        {
+            T val;
+            s.unbind(C, val);
+            return std::tuple_cat({val}, tup);
+        }
+    };
+    */
 
     template<typename... Args>
     class Sqlite3Statement : public Statement<Args...>, Sqlite3StatementBase
@@ -144,6 +219,10 @@ private:
             Sqlite3StatementBase(db, sql)
         {}
 
+        Sqlite3Statement(sqlite3 *db, const Glib::ustring &sql) :
+            Sqlite3StatementBase(db, sql.c_str())
+        {}
+
         virtual void execute(typename Parent::ArgsVector &args) override
         {
             for (auto &tup: args)
@@ -154,9 +233,33 @@ private:
             }
         }
     private:
-        void prepare_row(const Tup &args)
+        void prepare_row(Tup &args)
         {
-            Binder<std::tuple_size<Tup>::value, Args...> b(args);
+            Binder<std::tuple_size<Tup>::value, Args...> b(*this, args);
+        }
+    };
+
+    template<class Result, typename... Args>
+    class Sqlite3Query : public Query<Result, Args...>, Sqlite3StatementBase
+    {
+    public:
+        using Parent = Query<Result, Args...>;
+        using Tup = typename Parent::ArgsTuple;
+
+        Sqlite3Query(sqlite3 *db, const char *sql) :
+            Sqlite3StatementBase(db, sql)
+        {}
+
+        Sqlite3Query(sqlite3 *db, const Glib::ustring &sql) :
+            Sqlite3StatementBase(db, sql.c_str())
+        {}
+
+        virtual Result query(const Tup &row) override
+        {
+            Result result;
+            reset();
+            Binder<std::tuple_size<Tup>::value, Args...> b(*this, row);
+            fetch_rows(result);
         }
     };
 public:
@@ -167,40 +270,40 @@ public:
     /**
      * statement args: network_id, name
      */
-    virtual StatementPtr<void, id_t, Glib::ustring>
+    virtual StatementPtr<id_t, Glib::ustring>
         get_insert_network_info_statement(const char *source) override;
 
     /**
      * statement args: network_id, ts_id, tuning prop key, tuning prop value
      */
-    virtual StatementPtr<void, id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
         get_insert_tuning_statement(const char *source) override;
 
     /**
      * statement args: network_id, service_id, ts_id
      */
-    virtual StatementPtr<void, id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) override;
 
     /**
      * statement args: network_id, service_id, name
      */
-    virtual StatementPtr<void, id_t, id_t, Glib::ustring>
+    virtual StatementPtr<id_t, id_t, Glib::ustring>
         get_insert_service_name_statement(const char *source) override;
 
     /**
      * statement args: provider_name
      */
-    virtual StatementPtr<void, Glib::ustring>
+    virtual StatementPtr<Glib::ustring>
     get_insert_provider_name_statement(const char *source) override;
 
     /**
      * statement args: network_id, service_id, rowid from provider_name
      */
-    virtual StatementPtr<void, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t>
     get_insert_service_provider_name_statement(const char *source) override;
 
-    virtual StatementPtr<void, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t>
     get_insert_primary_lcn_statement(const char *source) override;
 protected:
     virtual void ensure_network_info_table(const char *source) override;
@@ -221,12 +324,20 @@ protected:
     virtual void ensure_sources_table() override;
 private:
     template<typename... Args>
-    StatementPtr<void, Args...> build_insert_statement(const char *source,
-            const char *table, const std::initializer_list<const char *> &keys)
+    StatementPtr<Args...> build_insert_statement(const char *source,
+            const char *table, const std::initializer_list<const char *> &keys,
+            bool replace = true)
     {
-        return std::static_pointer_cast<Statement<void, Args...> >
+        return std::static_pointer_cast<Statement<Args...> >
             (std::make_shared<Sqlite3Statement<Args...> >
-                (sqlite3_, build_insert_sql(source, table, keys)));
+                (sqlite3_, build_insert_sql(source, table, keys, replace)));
+    }
+
+    template<typename... Args>
+    StatementPtr<Args...> compile_sql(const std::string &sql)
+    {
+        return std::static_pointer_cast<Statement<Args...> >
+            (std::make_shared<Sqlite3Statement<Args...> >(sqlite3_, sql));
     }
 
     void execute(const Glib::ustring &sql);
@@ -236,8 +347,10 @@ private:
         return std::string(source) + '_' + name;
     }
 
+    /// If replace == false IGNORE is used instead
     static Glib::ustring build_insert_sql(const char *source,
-            const char *table, const std::initializer_list<const char *> &keys);
+            const char *table, const std::initializer_list<const char *> &keys,
+            bool replace = true);
 
     /// Each pair is <key, type + constraint (nullable)>
     static Glib::ustring build_create_table_sql(const std::string &name,

@@ -82,7 +82,7 @@ void Sqlite3Database::Sqlite3StatementBase::reset()
     sqlite3_reset(stmt_);
 }
 
-int Sqlite3Database::Sqlite3StatementBase::step()
+bool Sqlite3Database::Sqlite3StatementBase::step()
 {
     int result;
     while ((result = sqlite3_step(stmt_)) == SQLITE_BUSY)
@@ -94,7 +94,7 @@ int Sqlite3Database::Sqlite3StatementBase::step()
         throw Sqlite3Error(sqlite3_db_handle(stmt_),
                 result, "Error binding SQL string");
     }
-    return result;
+    return result == SQLITE_DONE;
 }
 
 Sqlite3Database::~Sqlite3Database()
@@ -128,28 +128,28 @@ void Sqlite3Database::open()
     }
 }
 
-Database::StatementPtr<void, id_t, Glib::ustring>
+Database::StatementPtr<id_t, Glib::ustring>
 Sqlite3Database::get_insert_network_info_statement(const char *source)
 {
     return build_insert_statement<id_t, Glib::ustring>(source, "network_info",
             {"network_id", "name"});
 }
 
-Database::StatementPtr<void, id_t, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_tuning_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, id_t, id_t>(source, "tuning",
             {"network_id", "ts_id", "tuning_key", "tuning_val"});
 }
 
-Database::StatementPtr<void, id_t, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_service_id_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, id_t, id_t>(source, "service_id",
             {"network_id", "service_id", "ts_id", "service_type"});
 }
 
-Database::StatementPtr<void, id_t, id_t, Glib::ustring>
+Database::StatementPtr<id_t, id_t, Glib::ustring>
 Sqlite3Database::get_insert_service_name_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, Glib::ustring>(source,
@@ -157,22 +157,26 @@ Sqlite3Database::get_insert_service_name_statement(const char *source)
             {"network_id", "service_id", "name"});
 }
 
-Database::StatementPtr<void, Glib::ustring>
+Database::StatementPtr<Glib::ustring>
 Sqlite3Database::get_insert_provider_name_statement(const char *source)
 {
     return build_insert_statement<Glib::ustring>(source,
-            "provider_name", {"provider_name"});
+            "provider_name", {"provider_name"}, false);
 }
 
-Database::StatementPtr<void, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t>
 Sqlite3Database::get_insert_service_provider_name_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t>(source,
-            "service_provider_name",
-            {"network_id", "service_id", "provider_name"});
+    return compile_sql<id_t, id_t, id_t>(
+        Glib::ustring("INSERT OR REPLACE INTO ") +
+        build_table_name(source, "service_provider_name") +
+        " (network_id, service_id, provider_id)"
+        " VALUES (?, ?, SELECT rowid FROM " +
+        build_table_name(source, "provider_name") +
+        " WHERE provider_name = ?)");
 }
 
-Database::StatementPtr<void, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t>
 Sqlite3Database::get_insert_primary_lcn_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, id_t>(source,
@@ -232,9 +236,8 @@ void Sqlite3Database::ensure_provider_name_table(const char *source)
 {
     auto table_name = build_table_name(source, "provider_name");
     execute(build_create_table_sql(table_name, {
-            {"provider_name", "TEXT"},
-        },
-        "PRIMARY KEY (network_id, service_id)"));
+            {"provider_name", "TEXT UNIQUE"},
+        }));
 }
 
 void Sqlite3Database::ensure_service_provider_name_table(const char *source)
@@ -280,10 +283,11 @@ void Sqlite3Database::execute(const Glib::ustring &sql)
 }
 
 Glib::ustring Sqlite3Database::build_insert_sql(const char *source,
-        const char *table, const std::initializer_list<const char *> &keys)
+        const char *table, const std::initializer_list<const char *> &keys,
+        bool replace)
 {
-    auto s = Glib::ustring("INSERT OR REPLACE INTO ") +
-        build_table_name(source, table) + " (";
+    auto s = Glib::ustring("INSERT OR ") + (replace ? "REPLACE" : "IGNORE") +
+        " INTO " + build_table_name(source, table) + " (";
     Glib::ustring p;
 
     auto it = keys.begin();
