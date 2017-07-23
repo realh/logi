@@ -171,13 +171,6 @@ public:
         get_insert_network_info_statement(const char *source) override;
 
     /**
-     * statement args: network_id, ts_id
-     */
-    virtual StatementPtr<void, id_t, id_t>
-        get_insert_transport_stream_info_statement(const char *source)
-        override;
-
-    /**
      * statement args: network_id, ts_id, tuning prop key, tuning prop value
      */
     virtual StatementPtr<void, id_t, id_t, id_t, id_t>
@@ -186,7 +179,7 @@ public:
     /**
      * statement args: network_id, service_id, ts_id
      */
-    virtual StatementPtr<void, id_t, id_t, id_t>
+    virtual StatementPtr<void, id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) override;
 
     /**
@@ -196,15 +189,21 @@ public:
         get_insert_service_name_statement(const char *source) override;
 
     /**
-     * statement args: network_id, service_id, provider_name
+     * statement args: provider_name
      */
-    virtual StatementPtr<void, id_t, id_t, Glib::ustring>
+    virtual StatementPtr<void, Glib::ustring>
+    get_insert_provider_name_statement(const char *source) override;
+
+    /**
+     * statement args: network_id, service_id, rowid from provider_name
+     */
+    virtual StatementPtr<void, id_t, id_t, id_t>
     get_insert_service_provider_name_statement(const char *source) override;
+
+    virtual StatementPtr<void, id_t, id_t, id_t>
+    get_insert_primary_lcn_statement(const char *source) override;
 protected:
     virtual void ensure_network_info_table(const char *source) override;
-
-    virtual void ensure_transport_stream_info_table(const char *source)
-        override;
 
     virtual void ensure_tuning_table(const char *source) override;
 
@@ -212,8 +211,12 @@ protected:
 
     virtual void ensure_service_name_table(const char *source) override;
 
+    virtual void ensure_provider_name_table(const char *source) override;
+
     virtual void ensure_service_provider_name_table(const char *source)
         override;
+
+    virtual void ensure_primary_lcn_table(const char *source) override;
 
     virtual void ensure_sources_table() override;
 private:
@@ -226,10 +229,31 @@ private:
                 (sqlite3_, build_insert_sql(source, table, keys)));
     }
 
-    Glib::ustring build_insert_sql(const char *source,
+    void execute(const Glib::ustring &sql);
+
+    static std::string build_table_name(const char *source, const char *name)
+    {
+        return std::string(source) + '_' + name;
+    }
+
+    static Glib::ustring build_insert_sql(const char *source,
             const char *table, const std::initializer_list<const char *> &keys);
 
+    /// Each pair is <key, type + constraint (nullable)>
+    static Glib::ustring build_create_table_sql(const std::string &name,
+            const std::initializer_list<std::pair<const char *, const char *> >
+                &columns, const char *constraints = nullptr);
+
+    static Glib::ustring build_create_index_sql(const std::string &table_name,
+            const std::string &index_name, const char *details,
+            bool unique = false);
+
     sqlite3 *sqlite3_ = nullptr;
+
+    constexpr static auto INT_PRIM_KEY =
+        "INTEGER PRIMARY KEY ON CONFLICT REPLACE";
+
+    constexpr static auto CONFLICT_REPLACE = "ON CONFLICT REPLACE";
 };
 
 }

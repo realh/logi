@@ -215,21 +215,15 @@ public:
         get_insert_network_info_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, ts_id
-     */
-    virtual StatementPtr<void, id_t, id_t>
-        get_insert_transport_stream_info_statement(const char *source) = 0;
-
-    /**
      * statement args: network_id, ts_id, tuning prop key, tuning prop value
      */
     virtual StatementPtr<void, id_t, id_t, id_t, id_t>
         get_insert_tuning_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, ts_id
+     * statement args: network_id, service_id, ts_id, service_type
      */
-    virtual StatementPtr<void, id_t, id_t, id_t>
+    virtual StatementPtr<void, id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) = 0;
 
     /**
@@ -239,10 +233,22 @@ public:
         get_insert_service_name_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, provider_name
+     * statement args: provider_name
      */
-    virtual StatementPtr<void, id_t, id_t, Glib::ustring>
+    virtual StatementPtr<void, Glib::ustring>
+    get_insert_provider_name_statement(const char *source) = 0;
+
+    /**
+     * statement args: network_id, service_id, row_id from provider_name
+     */
+    virtual StatementPtr<void, id_t, id_t, id_t>
     get_insert_service_provider_name_statement(const char *source) = 0;
+
+    /**
+     * statement args: network_id, service_id, lcn
+     */
+    virtual StatementPtr<void, id_t, id_t, id_t>
+    get_insert_primary_lcn_statement(const char *source) = 0;
 
     /**
      * Queues a query to be executed on the database thread. The result callback
@@ -290,15 +296,17 @@ protected:
      */
     virtual void ensure_network_info_table(const char *source) = 0;
 
-    virtual void ensure_transport_stream_info_table(const char *source) = 0;
-
     virtual void ensure_tuning_table(const char *source) = 0;
 
     virtual void ensure_service_id_table(const char *source) = 0;
 
     virtual void ensure_service_name_table(const char *source) = 0;
 
+    virtual void ensure_provider_name_table(const char *source) = 0;
+
     virtual void ensure_service_provider_name_table(const char *source) = 0;
+
+    virtual void ensure_primary_lcn_table(const char *source) = 0;
 
     virtual void ensure_sources_table() = 0;
 private:
