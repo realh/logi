@@ -73,6 +73,36 @@ private:
 
         void bind(int pos, const Glib::ustring &val);
 
+        template<typename T1>
+        void bind_tuple(const std::tuple<T1> &tup)
+        {
+            bind(1, std::get<0>(tup));
+        }
+
+        template<typename T1, typename T2>
+        void bind_tuple(const std::tuple<T1, T2> &tup)
+        {
+            bind(1, std::get<0>(tup));
+            bind(2, std::get<1>(tup));
+        }
+
+        template<typename T1, typename T2, typename T3>
+        void bind_tuple(const std::tuple<T1, T2, T3> &tup)
+        {
+            bind(1, std::get<0>(tup));
+            bind(2, std::get<1>(tup));
+            bind(3, std::get<2>(tup));
+        }
+
+        template<typename T1, typename T2, typename T3, typename T4>
+        void bind_tuple (const std::tuple<T1, T2, T3, T4> &tup)
+        {
+            bind(1, std::get<0>(tup));
+            bind(2, std::get<1>(tup));
+            bind(3, std::get<2>(tup));
+            bind(4, std::get<3>(tup));
+        }
+
         void fetch(int pos, std::uint32_t &val);
 
         void fetch(int pos, Glib::ustring &val);
@@ -136,42 +166,11 @@ private:
             } while (!result);
             return v;
         }
-
-        /*
-        template<typename T1>
-        void bind_tuple(const std::tuple<T1> &tup)
-        {
-            bind(1, std::get<0>(tup));
-        }
-
-        template<typename T1, typename T2>
-        void bind_tuple(const std::tuple<T1, T2> &tup)
-        {
-            bind(1, std::get<0>(tup));
-            bind(2, std::get<1>(tup));
-        }
-
-        template<typename T1, typename T2, typename T3>
-        void bind_tuple(const std::tuple<T1, T2, T3> &tup)
-        {
-            bind(1, std::get<0>(tup));
-            bind(2, std::get<1>(tup));
-            bind(3, std::get<2>(tup));
-        }
-
-        template<typename T1, typename T2, typename T3, typename T4>
-        void bind_tuple (const std::tuple<T1, T2, T3, T4> &tup)
-        {
-            bind(1, std::get<0>(tup));
-            bind(2, std::get<1>(tup));
-            bind(3, std::get<2>(tup));
-            bind(4, std::get<3>(tup));
-        }
-        */
     private:
         sqlite3_stmt *stmt_ = nullptr;
     };
 
+#if 0
     /// Uses template recursion to bind all args
     template<std::size_t N, typename... Args> class Binder
     {
@@ -192,6 +191,7 @@ private:
             s.bind(1, std::get<0, Args...>(tup));
         }
     };
+#endif
 
     /// Prepends column C of type T from sqlite result to tuple<Args...>,
     /// making a tuple<T, Args...>
@@ -228,14 +228,9 @@ private:
             for (auto &tup: args)
             {
                 reset();
-                prepare_row(tup);
+                bind_tuple(tup);
                 step();
             }
-        }
-    private:
-        void prepare_row(Tup &args)
-        {
-            Binder<std::tuple_size<Tup>::value, Args...> b(*this, args);
         }
     };
 
@@ -258,7 +253,7 @@ private:
         {
             Result result;
             reset();
-            Binder<std::tuple_size<Tup>::value, Args...> b(*this, row);
+            bind_tuple(row);
             fetch_rows(result);
         }
     };
