@@ -92,7 +92,10 @@ private:
         template<class TupleType, std::size_t... Is>
         void bind_tuple(const TupleType &tup, std::index_sequence<Is...>)
         {
-            (bind(Is + 1, std::get<Is>(tup)), ...);
+            // Prior to c++17 the ... has to be within an argument list
+            // or similar, so we pretend to make a list of 0s.
+            (void)
+            std::initializer_list<int>{(bind(Is + 1, std::get<Is>(tup)), 0)...};
         }
 
         template<typename... Args>
@@ -189,12 +192,11 @@ private:
         }
         */
 
-        /// Takes an out parameter instead of returning a vector to enable
-        /// type deduction. v should be empty on entry.
         template<typename... Args>
-        void fetch_rows(std::vector<std::tuple<Args...> > &v)
+        std::vector<std::tuple<Args...> > fetch_rows()
         {
             bool result;
+            std::vector<std::tuple<Args...> > v;
             do {
                 result = step();
                 v.push_back(fetch_row<Args...>());
@@ -286,10 +288,9 @@ private:
 
         virtual Result query(const Tup &row) override
         {
-            Result result;
             reset();
             bind_tuple(row);
-            fetch_rows(result);
+            return fetch_rows<Result>();
         }
     };
 public:
