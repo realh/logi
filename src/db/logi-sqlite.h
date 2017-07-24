@@ -73,6 +73,27 @@ private:
 
         void bind(int pos, const Glib::ustring &val);
 
+        /*
+        template<std::size_t Pos, class TupleType>
+        void bind(const TupleType &tup)
+        {
+            bind(Pos + 1, std::get<Pos>(tup));
+        }
+        */
+
+        template<class TupleType, std::size_t... Is>
+        void bind_tuple(const TupleType &tup, std::index_sequence<Is...>)
+        {
+            (bind(Is + 1, std::get<Is>(tup)), ...);
+        }
+
+        template<typename... Args>
+        void bind_tuple(const std::tuple<Args...> &tup)
+        {
+            bind_tuple(tup, std::index_sequence_for<Args...>());
+        }
+
+        /*
         template<typename T1>
         void bind_tuple(const std::tuple<T1> &tup)
         {
@@ -102,15 +123,16 @@ private:
             bind(3, std::get<2>(tup));
             bind(4, std::get<3>(tup));
         }
-
-        void fetch(int pos, std::uint32_t &val);
-
-        void fetch(int pos, Glib::ustring &val);
+        */
 
         void reset();
 
         /// Returns true if result is SQLITE_DONE
         bool step();
+
+        void fetch(int pos, std::uint32_t &val);
+
+        void fetch(int pos, Glib::ustring &val);
 
         template<typename T1> std::tuple<T1> fetch_row()
         {

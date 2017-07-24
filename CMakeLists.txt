@@ -1,11 +1,12 @@
 project(logi CXX)
 cmake_minimum_required(VERSION 3.1)
-set(CMAKE_CXX_STANDARD 14)
+#set(CMAKE_CXX_STANDARD 17)
 
 include(FindPkgConfig)
 
 if(UNIX)
-    add_definitions(-Wall -Wextra -Wunused -Wno-missing-field-initializers)
+    add_definitions(-Wall -Wextra -Wunused -Wno-missing-field-initializers
+        -std=c++1z)
 endif()
 
 set(LOGI_CORE_PKGS glibmm-2.4 gthread-2.0 gobject-2.0)
