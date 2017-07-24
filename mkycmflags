@@ -41,7 +41,7 @@ fp.close()
 
 flags.append("-I" + os.path.join(here, "src"))
 flags.append("-I.")
-flags.extend(["-Wall", "-Wextra", "-std=c++11", "-xc++"])
+flags.extend(["-Wall", "-Wextra", "-std=c++14", "-xc++"])
 
 os.unlink(output)
 fp = open(output, 'w')
