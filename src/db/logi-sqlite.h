@@ -69,17 +69,25 @@ private:
 
         virtual ~Sqlite3StatementBase();
     protected:
+        void reset();
+
+        /// Returns true if result is SQLITE_DONE
+        bool step();
+
         void bind(int pos, std::uint32_t val);
 
         void bind(int pos, const Glib::ustring &val);
 
-        /*
-        template<std::size_t Pos, class TupleType>
-        void bind(const TupleType &tup)
+        void fetch(int pos, std::uint32_t &val);
+
+        void fetch(int pos, Glib::ustring &val);
+
+        template<class T> T fetch(int pos)
         {
-            bind(Pos + 1, std::get<Pos>(tup));
+            T val;
+            fetch(pos, val);
+            return val;
         }
-        */
 
         template<class TupleType, std::size_t... Is>
         void bind_tuple(const TupleType &tup, std::index_sequence<Is...>)
@@ -91,6 +99,20 @@ private:
         void bind_tuple(const std::tuple<Args...> &tup)
         {
             bind_tuple(tup, std::index_sequence_for<Args...>());
+        }
+
+        template<class TupleType, std::size_t... Is>
+        TupleType fetch_row(std::index_sequence<Is...>)
+        {
+            return std::make_tuple
+                (fetch<typename std::tuple_element<Is, TupleType>::type>
+                    (Is)...);
+        }
+
+        template<typename... Args> std::tuple<Args...> fetch_row()
+        {
+            return fetch_row<std::tuple<Args...>>
+                (std::index_sequence_for<Args...>());
         }
 
         /*
@@ -123,16 +145,6 @@ private:
             bind(3, std::get<2>(tup));
             bind(4, std::get<3>(tup));
         }
-        */
-
-        void reset();
-
-        /// Returns true if result is SQLITE_DONE
-        bool step();
-
-        void fetch(int pos, std::uint32_t &val);
-
-        void fetch(int pos, Glib::ustring &val);
 
         template<typename T1> std::tuple<T1> fetch_row()
         {
@@ -175,9 +187,10 @@ private:
             fetch(3, v4);
             return {v1, v2, v3, v4};
         }
+        */
 
         /// Takes an out parameter instead of returning a vector to enable
-        /// type deduction
+        /// type deduction. v should be empty on entry.
         template<typename... Args>
         void fetch_rows(std::vector<std::tuple<Args...> > &v)
         {
