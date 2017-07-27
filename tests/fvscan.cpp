@@ -21,6 +21,7 @@
  * Finds an available DVB-T adapter and scans for Freeview.
  */
 
+#include "db/logi-sqlite.h"
 #include "scan/dvbt-tuning-iterator.h"
 #include "scan/multi-scanner.h"
 #include "scan/freeview-channel-scanner.h"
@@ -68,7 +69,7 @@ std::shared_ptr<Receiver> get_receiver()
 
 Glib::RefPtr<Glib::MainLoop> main_loop;
 
-void finished_cb(MultiScanner::Status status)
+void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
 {
     const char *s;
 
@@ -87,10 +88,26 @@ void finished_cb(MultiScanner::Status status)
     g_print("Scan finished:- %s\n", s);
 
     // If main_loop isn't running it means the scan failed as soon as it started
-    if (main_loop->is_running())
-        main_loop->quit();
+    if (status == MultiScanner::COMPLETE)
+    {
+        // Use shared_ptr to keep db alive in its own thread
+        // when we exit this scope. scanner can be destroyed though.
+        auto db = std::make_shared<Sqlite3Database>();
+        db->ensure_tables("Freeview");
+        scanner.commit_to_database(*db, "Freeview");
+        db->queue_callback([db]()
+        {
+            g_print("Committed all data to database\n");
+            main_loop->quit();
+        });
+    }
     else
-        main_loop.reset();
+    {
+        if (main_loop->is_running())
+            main_loop->quit();
+        else
+            main_loop.reset();
+    }
 }
 
 int main()

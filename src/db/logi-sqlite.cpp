@@ -109,7 +109,9 @@ Sqlite3Database::~Sqlite3Database()
 void Sqlite3Database::open()
 {
     std::string filename = Glib::build_filename(Glib::get_user_data_dir(),
-            "logi", "database.sqlite3");
+            "logi");
+    g_mkdir_with_parents(filename.c_str(), 0755);
+    filename = Glib::build_filename(filename, "database.sqlite3");
     int result = sqlite3_open(filename.c_str(), &sqlite3_);
     if (result != SQLITE_OK)
     {
@@ -140,6 +142,14 @@ Sqlite3Database::get_insert_tuning_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, id_t, id_t>(source, "tuning",
             {"original_network_id", "ts_id", "tuning_key", "tuning_val"});
+}
+
+Database::StatementPtr<id_t, id_t, id_t, id_t>
+Sqlite3Database::get_insert_transport_services_statement(const char *source)
+{
+    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
+            "transport_services",
+            {"original_network_id", "network_id", "ts_id", "service_id"});
 }
 
 Database::StatementPtr<id_t, id_t, id_t, id_t>

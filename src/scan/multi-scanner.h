@@ -53,7 +53,7 @@ private:
     std::shared_ptr<ChannelScanner> channel_scanner_;
     std::shared_ptr<TuningIterator> iter_;
     Status status_;
-    sigc::signal<void, Status> finished_signal_;
+    sigc::signal<void, MultiScanner &, Status> finished_signal_;
     sigc::connection lock_conn_, nolock_conn_;
     bool finished_;
 
@@ -86,9 +86,9 @@ public:
     /**
      * finished_signal:
      * Emitted when all the channels have been scanned.
-     * Takes a Status parameter.
+     * Takes a reference to this scanner and the status as arguments.
      */
-    sigc::signal<void, Status> finished_signal()
+    sigc::signal<void, MultiScanner &, Status> finished_signal()
     {
         return finished_signal_;
     }

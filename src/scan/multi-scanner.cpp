@@ -61,7 +61,7 @@ void MultiScanner::cancel()
         status_ = COMPLETE;
 
     if (!finished)
-        finished_signal_.emit(status_);
+        finished_signal_.emit(*this, status_);
 }
 
 void MultiScanner::channel_finished(bool success)
