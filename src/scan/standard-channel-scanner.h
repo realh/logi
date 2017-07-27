@@ -78,11 +78,6 @@ public:
      * is finished with.
      */
     void cancel() override;
-
-    /**
-     * Returns: Whether a complete data set has been acquired.
-     */
-    bool is_complete() const override;
 protected:
     /**
      * Can be overridden to specialise the NITProcessor eg for Freeview LCNs.

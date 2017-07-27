@@ -67,14 +67,16 @@ public:
     /**
      * Returns: Whether a complete data set has been acquired.
      */
-    virtual bool is_complete() const = 0;
+    virtual bool is_complete() const;
 protected:
     /**
      * finished:
      * Called to notify the MultiScanner that this has finished scanning the
      * current channel, or that the section filters timed out.
      */
-    void finished(bool success = true);
+    virtual void finished(bool success = true);
+
+    bool successful_ = false;
 };
 
 }

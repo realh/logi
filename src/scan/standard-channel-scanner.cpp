@@ -86,11 +86,6 @@ void StandardChannelScanner::cancel()
     }
 }
 
-bool StandardChannelScanner::is_complete() const
-{
-    return false;
-}
-
 StandardChannelScanner::NetworkData *
 StandardChannelScanner::get_network_data(std::uint16_t network_id)
 {

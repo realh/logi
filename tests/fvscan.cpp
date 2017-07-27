@@ -87,8 +87,7 @@ void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     }
     g_print("Scan finished:- %s\n", s);
 
-    // If main_loop isn't running it means the scan failed as soon as it started
-    if (status == MultiScanner::COMPLETE)
+    if (status == MultiScanner::COMPLETE || status == MultiScanner::PARTIAL)
     {
         // Use shared_ptr to keep db alive in its own thread
         // when we exit this scope. scanner can be destroyed though.
@@ -103,6 +102,8 @@ void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     }
     else
     {
+        // If main_loop isn't running it means the scan failed
+        // as soon as it started
         if (main_loop->is_running())
             main_loop->quit();
         else

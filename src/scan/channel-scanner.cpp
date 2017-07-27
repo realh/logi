@@ -28,4 +28,9 @@ void ChannelScanner::finished(bool success)
     multi_scanner_->channel_finished(success);
 }
 
+bool ChannelScanner::is_complete() const
+{
+    return successful_;
+}
+
 }
