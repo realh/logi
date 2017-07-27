@@ -41,7 +41,7 @@ protected:
     TableTracker tracker_;
     Glib::ustring network_name_;
     MultiScanner *mscanner_;
-    std::uint16_t current_ts_id_;
+    std::uint16_t current_ts_id_, current_nw_id_, current_orig_nw_id_;
 public:
     /**
      * process:

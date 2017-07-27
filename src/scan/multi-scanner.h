@@ -26,6 +26,8 @@
 #include "scan-data.h"
 #include "tuning-iterator.h"
 
+#include "db/logi-db.h"
+
 #include "si/descriptor.h"
 
 namespace logi
@@ -55,9 +57,12 @@ private:
     sigc::connection lock_conn_, nolock_conn_;
     bool finished_;
 
-    std::map<std::uint16_t, TransportStreamData> ts_data_;
+    std::map<std::uint16_t, NetworkNameData> nw_data_;
+    std::map<std::uint32_t, TransportStreamData> ts_data_;
     TransportStreamData *current_ts_data_;
-    std::map<std::uint16_t, ServiceData> service_data_;
+    std::map<std::uint32_t, ServiceData> service_data_;
+    // Key is (network_id << 16) | service_id
+    std::map<std::uint32_t, std::uint16_t> lcn_data_;
     // Used to avoid trying to scan the same channel more than once
     std::set<std::uint32_t> scanned_equivalences_;
 public:
@@ -99,22 +104,31 @@ public:
     }
 
     /// Returns either a new TransportStreamData or an existing one
-    TransportStreamData &get_transport_stream_data(std::uint16_t ts_id);
+    TransportStreamData &get_transport_stream_data(std::uint16_t orig_nw_id,
+            std::uint16_t ts_id);
 
     /// Returns either a new ServiceData or an existing one
-    ServiceData &get_service_data(std::uint16_t service_id);
+    ServiceData &get_service_data(std::uint16_t orig_nw_id,
+            std::uint16_t service_id);
 
-    void process_service_list_descriptor(std::uint16_t ts_id,
+    void process_service_list_descriptor(std::uint16_t orig_nw_id,
+            std::uint16_t ts_id, const Descriptor &desc);
+
+    void process_delivery_system_descriptor(std::uint16_t nw_id,
+            std::uint16_t orig_nw_id, std::uint16_t ts_id,
             const Descriptor &desc);
 
-    void process_delivery_system_descriptor(std::uint16_t ts_id,
+    void process_service_descriptor(std::uint16_t orig_nw_id,
+            std::uint16_t service_id, std::uint16_t ts_id,
             const Descriptor &desc);
 
-    void process_service_descriptor(std::uint16_t ts_id,
-            std::uint16_t service_id,
-            const Descriptor &desc);
+    void process_network_name(std::uint16_t network_id,
+            const Glib::ustring &name);
 
-    void set_lcn(std::uint16_t service_id, std::uint16_t lcn);
+    void set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
+            std::uint16_t lcn);
+
+    void commit_to_database(Database &db, const char *source);
 
     friend ChannelScanner;
 private:

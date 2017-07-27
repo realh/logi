@@ -131,7 +131,7 @@ private:
 
         virtual void execute() override
         {
-            statement_.execute(*args_);
+            statement_->execute(*args_);
         }
 
         virtual void forward_result() override
@@ -215,19 +215,25 @@ public:
         get_insert_network_info_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, ts_id, tuning prop key, tuning prop value
+     * statement args: orig_nw_id, ts_id, tuning prop key, tuning prop value
      */
     virtual StatementPtr<id_t, id_t, id_t, id_t>
         get_insert_tuning_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, ts_id, service_type
+     * statement args: orig_nw_id, nw_id, ts_id, service_id
+     */
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
+        get_insert_transport_services_statement(const char *source) = 0;
+
+    /**
+     * statement args: orig_nw_id, service_id, ts_id, service_type
      */
     virtual StatementPtr<id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, name
+     * statement args: orig_nw_id, service_id, name
      */
     virtual StatementPtr<id_t, id_t, Glib::ustring>
         get_insert_service_name_statement(const char *source) = 0;
@@ -239,9 +245,9 @@ public:
     get_insert_provider_name_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, row_id from provider_name
+     * statement args: orig_nw_id, service_id, provider_name
      */
-    virtual StatementPtr<id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, Glib::ustring>
     get_insert_service_provider_name_statement(const char *source) = 0;
 
     /**
@@ -297,6 +303,8 @@ protected:
     virtual void ensure_network_info_table(const char *source) = 0;
 
     virtual void ensure_tuning_table(const char *source) = 0;
+
+    virtual void ensure_transport_services_table(const char *source) = 0;
 
     virtual void ensure_service_id_table(const char *source) = 0;
 

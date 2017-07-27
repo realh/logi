@@ -148,7 +148,7 @@ void StandardChannelScanner::this_sdt_filter_cb(int reason,
     if (section && !have_current_ts_id_)
     {
         auto &ts = multi_scanner_->get_transport_stream_data(
-                section->transport_stream_id());
+                section->original_network_id(), section->transport_stream_id());
         if (!ts.get_tuning())
             ts.set_tuning(multi_scanner_->get_receiver()->current_tuning());
         ts.set_scan_status(TransportStreamData::SCANNED);

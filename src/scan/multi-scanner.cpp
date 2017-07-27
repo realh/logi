@@ -22,6 +22,7 @@
 #include "channel-scanner.h"
 #include "multi-scanner.h"
 
+#include "si/network-name-descriptor.h"
 #include "si/service-descriptor.h"
 #include "si/service-list-descriptor.h"
 #include "si/terr-delsys-descriptor.h"
@@ -175,24 +176,28 @@ void MultiScanner::nolock_cb()
 }
 
 TransportStreamData &
-MultiScanner::get_transport_stream_data(std::uint16_t ts_id)
+MultiScanner::get_transport_stream_data(std::uint16_t orig_nw_id,
+        std::uint16_t ts_id)
 {
-    auto &tsdat = ts_data_[ts_id];
+    auto &tsdat = ts_data_[(std::uint32_t(orig_nw_id) << 16) | ts_id];
     tsdat.set_transport_stream_id(ts_id);
+    tsdat.set_original_network_id(orig_nw_id);
     current_ts_data_ = &tsdat;
     return tsdat;
 }
 
 ServiceData &
-MultiScanner::get_service_data(std::uint16_t service_id)
+MultiScanner::get_service_data(std::uint16_t orig_nw_id,
+        std::uint16_t service_id)
 {
-    auto &sdat = service_data_[service_id];
+    auto &sdat = service_data_[(orig_nw_id << 16) | service_id];
+    sdat.set_original_network_id(orig_nw_id);
     sdat.set_service_id(service_id);
     return sdat;
 }
 
-void MultiScanner::process_service_list_descriptor(std::uint16_t ts_id,
-        const Descriptor &desc)
+void MultiScanner::process_service_list_descriptor(std::uint16_t orig_nw_id,
+        std::uint16_t ts_id, const Descriptor &desc)
 {
     ServiceListDescriptor sd(desc);
     /*
@@ -202,22 +207,22 @@ void MultiScanner::process_service_list_descriptor(std::uint16_t ts_id,
         g_debug("      id %04x type %02x", s.service_id(), s.service_type());
     }
     */
-    auto &tsdat = get_transport_stream_data(ts_id);
+    auto &tsdat = get_transport_stream_data(orig_nw_id, ts_id);
     const auto &svcs = sd.get_services();
     g_debug("    %ld services", svcs.size());
     for (const auto &s: svcs)
     {
         tsdat.add_service_id(s.service_id());
-        get_service_data(s.service_id()).set_service_id(s.service_id());
     }
 }
 
-void MultiScanner::process_delivery_system_descriptor(std::uint16_t ts_id,
-        const Descriptor &desc)
+void MultiScanner::process_delivery_system_descriptor(std::uint16_t nw_id,
+        std::uint16_t orig_nw_id, std::uint16_t ts_id, const Descriptor &desc)
 {
     // FIXME: Also need to support satellite later
     TerrestrialDeliverySystemDescriptor d(desc);
-    auto &tsdat = get_transport_stream_data(ts_id);
+    auto &tsdat = get_transport_stream_data(orig_nw_id, ts_id);
+    tsdat.set_network_id(nw_id);
     auto tuning = d.get_tuning_properties();
     if (!tsdat.get_tuning())
         g_print("New TS %d: %s\n", ts_id, tuning->describe().c_str());
@@ -226,39 +231,41 @@ void MultiScanner::process_delivery_system_descriptor(std::uint16_t ts_id,
     tsdat.set_tuning(tuning);
 }
 
-void MultiScanner::process_service_descriptor(std::uint16_t ts_id,
-        std::uint16_t service_id,
-        const Descriptor &desc)
+void MultiScanner::process_service_descriptor(std::uint16_t orig_nw_id,
+        std::uint16_t service_id, std::uint16_t ts_id, const Descriptor &desc)
 {
     ServiceDescriptor sdesc(desc);
     g_debug("  Type %d, provider_name '%s', name '%s'",
             sdesc.service_type(),
             sdesc.service_provider_name().c_str(),
             sdesc.service_name().c_str());
-    auto &sdat = get_service_data(service_id);
-    sdat.set_transport_stream_id(ts_id);
+    auto &sdat = get_service_data(orig_nw_id, service_id);
     sdat.set_scanned();
     sdat.set_name(sdesc.service_name());
     sdat.set_provider_name(sdesc.service_provider_name());
+    sdat.set_ts_id(ts_id);
+    sdat.set_service_type(sdesc.service_type());
 }
 
-void MultiScanner::set_lcn(std::uint16_t service_id, std::uint16_t lcn)
+void MultiScanner::set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
+        std::uint16_t lcn)
 {
-    auto &sdat = get_service_data(service_id);
-    sdat.set_lcn(lcn);
+    lcn_data_[(std::uint32_t(nw_id) << 16) | service_id] = lcn;
 }
 
 bool MultiScanner::check_harvest()
 {
     if (!ts_data_.size() || !service_data_.size())
         return false;
+    /*
     g_print("Outstanding transports:\n");
     for (const auto &ts: ts_data_)
     {
         if (ts.second.get_scan_status() == TransportStreamData::PENDING)
-            g_print("%d ", ts.first);
+            g_print("%ld ", ts.first);
     }
     g_print("\n");
+    */
     /*
     g_print("Outstanding services:\n");
     for (const auto &s: service_data_)
@@ -278,6 +285,107 @@ bool MultiScanner::check_harvest()
         [](const std::pair<std::uint16_t, const ServiceData &> &s)
         { return s.second.get_scanned(); });
     */
+}
+
+void MultiScanner::process_network_name(std::uint16_t network_id,
+        const Glib::ustring &name)
+{
+    nw_data_[network_id] = NetworkNameData(network_id, name);
+}
+
+void MultiScanner::commit_to_database(Database &db, const char *source)
+{
+    auto ins_nw = db.get_insert_network_info_statement(source);
+    auto ins_tuning = db.get_insert_tuning_statement(source);
+    auto ins_trans_serv = db.get_insert_transport_services_statement(source);
+    auto ins_serv_id = db.get_insert_service_id_statement(source);
+    auto ins_serv_name = db.get_insert_service_name_statement(source);
+    auto ins_prov_nm = db.get_insert_provider_name_statement(source);
+    auto ins_serv_prov_nm =
+        db.get_insert_service_provider_name_statement(source);
+    auto ins_prim_lcn = db.get_insert_primary_lcn_statement(source);
+
+    auto nw_v =
+        std::make_shared<std::vector<std::tuple<id_t, Glib::ustring> > >();
+    auto tuning_v =
+        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t, id_t> > >();
+    auto trans_serv_v =
+        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t, id_t> > >();
+    auto serv_id_v =
+        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t, id_t> > >();
+    auto serv_name_v =
+        std::make_shared<std::vector<std::tuple<id_t, id_t,
+                Glib::ustring> > >();
+    auto prov_nm_v =
+        std::make_shared<std::vector<std::tuple<Glib::ustring> > >();
+    auto serv_prov_nm_v =
+        std::make_shared<std::vector<std::tuple<id_t, id_t,
+                Glib::ustring> > >();
+    auto prim_lcn_v =
+        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t> > >();
+
+    for (const auto &nw: nw_data_)
+    {
+        nw_v->emplace_back(nw.first, nw.second.get_network_name());
+    }
+    db.queue_statement(ins_nw, nw_v);
+
+    for (const auto &tsp: ts_data_)
+    {
+        const auto &ts = tsp.second;
+        auto tuning = ts.get_tuning();
+        if (tuning)
+        {
+            auto props = tuning->get_props();
+            for (std::uint32_t n = 0; n < props->num; ++n)
+            {
+                const auto &prop = props->props[n];
+                tuning_v->emplace_back(ts.get_original_network_id(),
+                        ts.get_transport_stream_id(),
+                        prop.cmd, prop.u.data);
+            }
+            for (const auto &s: ts.get_service_ids())
+            {
+                trans_serv_v->emplace_back(ts.get_original_network_id(),
+                        ts.get_network_id(), ts.get_transport_stream_id(),
+                        s);
+
+            }
+        }
+    }
+    db.queue_statement(ins_nw, nw_v);
+    db.queue_statement(ins_tuning, tuning_v);
+
+    for (const auto &sp: service_data_)
+    {
+        const auto &s = sp.second;
+        serv_id_v->emplace_back(s.get_original_network_id(), s.get_service_id(),
+                s.get_ts_id(), s.get_service_type());
+        const auto &sn = s.get_name();
+        if (sn.size())
+        {
+            serv_name_v->emplace_back(s.get_original_network_id(),
+                    s.get_service_id(), sn);
+        }
+        const auto &spn = s.get_provider_name();
+        if (spn.size())
+        {
+            prov_nm_v->emplace_back(spn);
+            serv_prov_nm_v->emplace_back(s.get_original_network_id(),
+                    s.get_service_id(), spn);
+        }
+    }
+    // Global provider names have to be inserted before service_provider_names
+    db.queue_statement(ins_prov_nm, prov_nm_v);
+    db.queue_statement(ins_serv_name, serv_name_v);
+    db.queue_statement(ins_serv_prov_nm, serv_prov_nm_v);
+
+    for (const auto &lp: lcn_data_)
+    {
+        auto ns = lp.first;
+        prim_lcn_v->emplace_back((ns >> 16) &0xffff, ns & 0xff, lp.second);
+    }
+    db.queue_statement(ins_prim_lcn, prim_lcn_v);
 }
 
 }

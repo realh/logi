@@ -63,6 +63,7 @@ SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
             sec->original_network_id(),
             sec->section_length());
 
+    current_orig_nw_id_ = sec->original_network_id();
     current_ts_id_ = sec->transport_stream_id();
 
     auto services = sec->get_services();
@@ -95,8 +96,8 @@ void SDTProcessor::process_descriptor(const Descriptor &desc)
     switch (desc.tag())
     {
         case Descriptor::SERVICE:
-            mscanner_->process_service_descriptor(current_ts_id_,
-                    current_service_id_, desc);
+            mscanner_->process_service_descriptor(current_orig_nw_id_,
+                    current_ts_id_, current_service_id_, desc);
             break;
     }
 }

@@ -27,6 +27,28 @@
 namespace logi
 {
 
+class NetworkNameData
+{
+public:
+    NetworkNameData() : network_id_(0) {}
+
+    NetworkNameData(std::uint16_t nw_id, const Glib::ustring &name)
+        : network_id_(nw_id), network_name_(name)
+    {}
+
+    NetworkNameData(const NetworkNameData &) = default;
+    NetworkNameData(NetworkNameData &&) = default;
+    NetworkNameData &operator=(const NetworkNameData &) = default;
+    NetworkNameData &operator=(NetworkNameData &&) = default;
+
+    std::uint16_t get_network_id() const { return network_id_; }
+
+    const Glib::ustring &get_network_name() const { return network_name_; }
+private:
+    std::uint16_t network_id_;
+    Glib::ustring network_name_;
+};
+
 class TransportStreamData
 {
 public:
@@ -39,10 +61,12 @@ public:
 
     TransportStreamData(std::uint16_t transport_stream_id = 0,
             std::uint16_t network_id = 0,
+            std::uint16_t orig_network_id = 0,
             std::shared_ptr<TuningProperties> tuning = nullptr) :
         transport_stream_id_(transport_stream_id),
-        network_id_(network_id), tuning_(tuning),
-        scan_status_(PENDING)
+        network_id_(network_id),
+        original_network_id_(orig_network_id),
+        tuning_(tuning), scan_status_(PENDING)
     {}
 
     void set_transport_stream_id(std::uint16_t transport_stream_id)
@@ -63,6 +87,16 @@ public:
     std::uint16_t get_network_id() const
     {
         return network_id_;
+    }
+
+    void set_original_network_id(std::uint16_t original_network_id)
+    {
+        original_network_id_ = original_network_id;
+    }
+
+    std::uint16_t get_original_network_id() const
+    {
+        return original_network_id_;
     }
 
     void set_tuning(TuningProperties *tuning)
@@ -103,7 +137,7 @@ public:
     }
 private:
     std::uint16_t transport_stream_id_;
-    std::uint16_t network_id_;
+    std::uint16_t network_id_, original_network_id_;
     std::shared_ptr<TuningProperties> tuning_;
     std::set<std::uint16_t> service_ids_;
     ScanStatus scan_status_;
@@ -113,11 +147,14 @@ class ServiceData
 {
 public:
     ServiceData(std::uint16_t service_id = 0,
-            std::uint16_t transport_stream_id = 0,
+            std::uint16_t orig_nw_id = 0,
+            std::uint16_t ts_id = 0,
+            std::uint8_t service_type = 0,
             bool scanned = false) :
         service_id_(service_id),
-        transport_stream_id_(transport_stream_id),
-        lcn_(0),
+        original_network_id_(orig_nw_id),
+        ts_id_(ts_id),
+        service_type_(service_type),
         scanned_(scanned)
     {}
 
@@ -131,14 +168,34 @@ public:
         return service_id_;
     }
 
-    void set_transport_stream_id(std::uint16_t transport_stream_id)
+    void set_original_network_id(std::uint16_t original_network_id)
     {
-        transport_stream_id_ = transport_stream_id;
+        original_network_id_ = original_network_id;
     }
 
-    std::uint16_t get_transport_stream_id() const
+    std::uint16_t get_original_network_id() const
     {
-        return transport_stream_id_;
+        return original_network_id_;
+    }
+
+    void set_ts_id(std::uint16_t ts_id)
+    {
+        ts_id_ = ts_id;
+    }
+
+    std::uint16_t get_ts_id() const
+    {
+        return ts_id_;
+    }
+
+    void set_service_type(std::uint8_t service_type)
+    {
+        service_type_ = service_type;
+    }
+
+    std::uint8_t get_service_type() const
+    {
+        return service_type_;
     }
 
     template<class S> void set_name(S &&name)
@@ -161,16 +218,6 @@ public:
         return provider_name_;
     }
 
-    void set_lcn(std::uint16_t lcn)
-    {
-        lcn_ = lcn;
-    }
-
-    std::uint16_t get_lcn() const
-    {
-        return lcn_;
-    }
-
     void set_scanned()
     {
         scanned_ = true;
@@ -182,10 +229,10 @@ public:
     }
 private:
     std::uint16_t service_id_;
-    std::uint16_t transport_stream_id_;
+    std::uint16_t original_network_id_;
+    std::uint16_t ts_id_;
+    std::uint8_t service_type_;
     Glib::ustring name_, provider_name_;
-    // TODO: Needs a more complex structure for Freesat
-    std::uint16_t lcn_;
     bool scanned_;
 };
 

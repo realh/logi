@@ -39,7 +39,7 @@ class SDTProcessor
 private:
     TableTracker tracker_;
     MultiScanner *mscanner_;
-    std::uint16_t current_ts_id_, current_service_id_;
+    std::uint16_t current_orig_nw_id_, current_ts_id_, current_service_id_;
 public:
     TableTracker::Result
     process(std::shared_ptr<SDTSection> sec, MultiScanner *ms);

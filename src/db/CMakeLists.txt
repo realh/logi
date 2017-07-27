@@ -9,5 +9,5 @@ set(LOGI_DB_HEADERS
 )
 
 add_library(logidb STATIC ${LOGI_DB_SOURCES})
-target_compile_options(logidb PUBLIC ${SQLITE_CFLAGS})
+target_compile_options(logidb PUBLIC ${GLIB_CFLAGS} ${SQLITE_CFLAGS})
 target_link_libraries(logidb logicore)

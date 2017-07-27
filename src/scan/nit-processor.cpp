@@ -55,6 +55,8 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
             break;
     }
 
+    current_nw_id_ = sec->network_id();
+
     //g_print("********\n");
     //sec->dump_to_stdout();
     //g_print("********\n");
@@ -83,6 +85,7 @@ bool NITProcessor::process(std::shared_ptr<NITSection> sec, MultiScanner *ms)
             sec->transport_stream_loop_length());
     for (auto &ts: sec->get_transport_stream_loop())
     {
+        current_orig_nw_id_ = ts.original_network_id();
         //g_debug("  TS subsection offset %d len %d (%x) + 6",
         //        ts.get_offset(), ts.word12(4), ts.word12(4));
         //g_debug("  ts.transport_descriptors_length %d",
@@ -107,7 +110,7 @@ void NITProcessor::process_ts_data(const TSSectionData &ts)
     // Make sure all transports referred to are in our table, even if we don't
     // hav euseful info for them yet. That way we can detect the presence of
     // Freeview HD channels and keep scanning until we get their frequency
-    mscanner_->get_transport_stream_data(current_ts_id_);
+    mscanner_->get_transport_stream_data(current_nw_id_, current_ts_id_);
 
     auto descs = ts.get_transport_descriptors();
     /*
@@ -130,13 +133,16 @@ void NITProcessor::process_descriptor(const Descriptor &desc)
             if (!network_name_.size())
             {
                 network_name_ = NetworkNameDescriptor(desc).get_network_name();
+                mscanner_->process_network_name(current_nw_id_, network_name_);
             }
             break;
         case Descriptor::SERVICE_LIST:
-            mscanner_->process_service_list_descriptor(current_ts_id_, desc);
+            mscanner_->process_service_list_descriptor(current_orig_nw_id_,
+                    current_ts_id_, desc);
             break;
         case Descriptor::TERRESTRIAL_DELIVERY_SYSTEM:
-            mscanner_->process_delivery_system_descriptor(current_ts_id_, desc);
+            mscanner_->process_delivery_system_descriptor(current_nw_id_,
+                    current_orig_nw_id_, current_ts_id_, desc);
             break;
     }
 }

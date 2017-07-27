@@ -150,6 +150,7 @@ void Database::ensure_tables_callback(const char *source)
 {
     ensure_sources_table();
     ensure_network_info_table(source);
+    ensure_transport_services_table(source);
     ensure_tuning_table(source);
     ensure_service_id_table(source);
     ensure_service_name_table(source);
