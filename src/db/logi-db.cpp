@@ -69,7 +69,7 @@ void Database::start()
         try
         {
             open();
-            ensure_sources_table();
+            ensure_source_table();
         }
         catch (...)
         {
@@ -148,15 +148,15 @@ void Database::ensure_tables(const char *source)
 
 void Database::ensure_tables_callback(const char *source)
 {
-    ensure_sources_table();
+    ensure_source_table();
     ensure_network_info_table(source);
     ensure_transport_services_table(source);
     ensure_tuning_table(source);
     ensure_service_id_table(source);
     ensure_service_name_table(source);
     ensure_provider_name_table(source);
-    ensure_service_provider_name_table(source);
-    ensure_primary_lcn_table(source);
+    ensure_service_provider_id_table(source);
+    ensure_network_lcn_table(source);
 }
 
 }

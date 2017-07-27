@@ -76,6 +76,17 @@ void Sqlite3Database::Sqlite3StatementBase::bind(int pos,
     }
 }
 
+void Sqlite3Database::Sqlite3StatementBase::fetch(int pos, std::uint32_t &val)
+{
+    val = sqlite3_column_int(stmt_, pos);
+}
+
+void Sqlite3Database::Sqlite3StatementBase::fetch(int pos, Glib::ustring &val)
+{
+    // Why do library writers insist on using unsigned char for text?
+    val = (const char *) sqlite3_column_text(stmt_, pos);
+}
+
 void Sqlite3Database::Sqlite3StatementBase::reset()
 {
     sqlite3_clear_bindings(stmt_);
@@ -112,6 +123,7 @@ void Sqlite3Database::open()
             "logi");
     g_mkdir_with_parents(filename.c_str(), 0755);
     filename = Glib::build_filename(filename, "database.sqlite3");
+    g_print("Creating database %s\n", filename.c_str());
     int result = sqlite3_open(filename.c_str(), &sqlite3_);
     if (result != SQLITE_OK)
     {
@@ -133,37 +145,43 @@ void Sqlite3Database::open()
 Database::StatementPtr<id_t, Glib::ustring>
 Sqlite3Database::get_insert_network_info_statement(const char *source)
 {
-    return build_insert_statement<id_t, Glib::ustring>(source, "network_info",
+    return build_insert_statement<id_t, Glib::ustring>(source,
+            NETWORK_INFO_TABLE,
             {"network_id", "name"});
 }
 
 Database::StatementPtr<id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_tuning_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t, id_t>(source, "tuning",
-            {"original_network_id", "ts_id", "tuning_key", "tuning_val"});
+    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
+            TUNING_TABLE,
+            {"original_network_id", "transport_stream_id",
+            "tuning_key", "tuning_val"});
 }
 
 Database::StatementPtr<id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_transport_services_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, id_t, id_t>(source,
-            "transport_services",
-            {"original_network_id", "network_id", "ts_id", "service_id"});
+            TRANSPORT_SERVICES_TABLE,
+            {"original_network_id", "network_id",
+            "transport_stream_id", "service_id"});
 }
 
 Database::StatementPtr<id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_service_id_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t, id_t>(source, "service_id",
-            {"original_network_id", "service_id", "ts_id", "service_type"});
+    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
+            SERVICE_ID_TABLE,
+            {"original_network_id", "service_id",
+            "transport_stream_id", "service_type"});
 }
 
 Database::StatementPtr<id_t, id_t, Glib::ustring>
 Sqlite3Database::get_insert_service_name_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, Glib::ustring>(source,
-            "service_name",
+            SERVICE_NAME_TABLE,
             {"original_network_id", "service_id", "name"});
 }
 
@@ -171,33 +189,43 @@ Database::StatementPtr<Glib::ustring>
 Sqlite3Database::get_insert_provider_name_statement(const char *source)
 {
     return build_insert_statement<Glib::ustring>(source,
-            "provider_name", {"provider_name"}, false);
-}
-
-Database::StatementPtr<id_t, id_t, Glib::ustring>
-Sqlite3Database::get_insert_service_provider_name_statement(const char *source)
-{
-    return compile_sql<id_t, id_t, Glib::ustring>(
-        Glib::ustring("INSERT OR REPLACE INTO ") +
-        build_table_name(source, "service_provider_name") +
-        " (original_network_id, service_id, provider_id)"
-        " VALUES (?, ?, SELECT rowid FROM " +
-        build_table_name(source, "provider_name") +
-        " WHERE provider_name = ?)");
+            PROVIDER_NAME_TABLE, {"provider_name"}, false);
 }
 
 Database::StatementPtr<id_t, id_t, id_t>
-Sqlite3Database::get_insert_primary_lcn_statement(const char *source)
+Sqlite3Database::get_insert_service_provider_id_statement(const char *source)
 {
     return build_insert_statement<id_t, id_t, id_t>(source,
-            "primary_lcn",
+            SERVICE_PROVIDER_ID_TABLE,
+            {"original_network_id", "service_id", "provider_id"}, false);
+}
+
+Database::StatementPtr<id_t, id_t, id_t>
+Sqlite3Database::get_insert_network_lcn_statement(const char *source)
+{
+    return build_insert_statement<id_t, id_t, id_t>(source,
+            NETWORK_LCN_TABLE,
             {"network_id", "service_id", "lcn"});
 }
 
+Database::StatementPtr<Glib::ustring>
+Sqlite3Database::get_insert_source_statement()
+{
+    return build_insert_statement<Glib::ustring>
+        (nullptr, SOURCE_TABLE, {"source_name"}, false);
+}
+
+Database::QueryPtr<Database::Vector<id_t>, Glib::ustring>
+Sqlite3Database::get_provider_id_query(const char *source)
+{
+    return build_query<Vector<id_t>, Glib::ustring>
+        (source, PROVIDER_NAME_TABLE, {"provider_name"},
+        "provider_name = ?");
+}
 
 void Sqlite3Database::ensure_network_info_table(const char *source)
 {
-    auto table_name = build_table_name(source, "network_info");
+    auto table_name = build_table_name(source, NETWORK_INFO_TABLE);
     execute(build_create_table_sql(table_name, {
             {"network_id", INT_PRIM_KEY},
             {"name", "TEXT"}
@@ -207,7 +235,7 @@ void Sqlite3Database::ensure_network_info_table(const char *source)
 
 void Sqlite3Database::ensure_tuning_table(const char *source)
 {
-    auto table_name = build_table_name(source, "tuning");
+    auto table_name = build_table_name(source, TUNING_TABLE);
     execute(build_create_table_sql(table_name, {
             {"original_network_id", "INTEGER"},
             {"transport_stream_id", "INTEGER"},
@@ -221,7 +249,7 @@ void Sqlite3Database::ensure_tuning_table(const char *source)
 
 void Sqlite3Database::ensure_transport_services_table(const char *source)
 {
-    auto table_name = build_table_name(source, "transport_services");
+    auto table_name = build_table_name(source, TRANSPORT_SERVICES_TABLE);
     execute(build_create_table_sql(table_name, {
             {"original_network_id", "INTEGER"},
             {"network_id", "INTEGER"},
@@ -233,7 +261,7 @@ void Sqlite3Database::ensure_transport_services_table(const char *source)
 
 void Sqlite3Database::ensure_service_id_table(const char *source)
 {
-    auto table_name = build_table_name(source, "service_id");
+    auto table_name = build_table_name(source, SERVICE_ID_TABLE);
     execute(build_create_table_sql(table_name, {
             {"original_network_id", "INTEGER"},
             {"transport_stream_id", "INTEGER"},
@@ -245,7 +273,7 @@ void Sqlite3Database::ensure_service_id_table(const char *source)
 
 void Sqlite3Database::ensure_service_name_table(const char *source)
 {
-    auto table_name = build_table_name(source, "service_name");
+    auto table_name = build_table_name(source, SERVICE_NAME_TABLE);
     execute(build_create_table_sql(table_name, {
             {"original_network_id", "INTEGER"},
             {"service_id", "INTEGER"},
@@ -256,15 +284,15 @@ void Sqlite3Database::ensure_service_name_table(const char *source)
 
 void Sqlite3Database::ensure_provider_name_table(const char *source)
 {
-    auto table_name = build_table_name(source, "provider_name");
+    auto table_name = build_table_name(source, PROVIDER_NAME_TABLE);
     execute(build_create_table_sql(table_name, {
             {"provider_name", "TEXT PRIMARY KEY ON CONFLICT IGNORE"},
         }));
 }
 
-void Sqlite3Database::ensure_service_provider_name_table(const char *source)
+void Sqlite3Database::ensure_service_provider_id_table(const char *source)
 {
-    auto table_name = build_table_name(source, "service_provider_name");
+    auto table_name = build_table_name(source, SERVICE_PROVIDER_ID_TABLE);
     execute(build_create_table_sql(table_name, {
             {"original_network_id", "INTEGER"},
             {"service_id", "INTEGER"},
@@ -273,9 +301,9 @@ void Sqlite3Database::ensure_service_provider_name_table(const char *source)
         "PRIMARY KEY (original_network_id, service_id)"));
 }
 
-void Sqlite3Database::ensure_primary_lcn_table(const char *source)
+void Sqlite3Database::ensure_network_lcn_table(const char *source)
 {
-    auto table_name = build_table_name(source, "primary_lcn");
+    auto table_name = build_table_name(source, NETWORK_LCN_TABLE);
     execute(build_create_table_sql(table_name, {
             {"network_id", "INTEGER"},
             {"service_id", "INTEGER"},
@@ -284,15 +312,16 @@ void Sqlite3Database::ensure_primary_lcn_table(const char *source)
         "PRIMARY KEY (network_id, lcn)"));
 }
 
-void Sqlite3Database::ensure_sources_table()
+void Sqlite3Database::ensure_source_table()
 {
-    execute(build_create_table_sql("sources", {
+    execute(build_create_table_sql(SOURCE_TABLE, {
             {"source_name", "TEXT"},
         }));
 }
 
 void Sqlite3Database::execute(const Glib::ustring &sql)
 {
+    g_print("Executing SQL {%s}\n", sql.c_str());
     sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(sqlite3_, sql.c_str(), -1, &stmt, nullptr);
     if (result != SQLITE_OK)
@@ -330,8 +359,31 @@ Glib::ustring Sqlite3Database::build_insert_sql(const char *source,
     return s + ") VALUES (" + p + ")";
 }
 
+Glib::ustring Sqlite3Database::build_query_sql(const char *source,
+        const char *table, const std::initializer_list<const char *> &keys,
+        const char *where)
+{
+    Glib::ustring s = "SELECT ";
+    auto it = keys.begin();
+    auto end = keys.end();
+    while (it != end)
+    {
+        s += *it;
+        if (++it != end)
+            s += ", ";
+    }
+    s += " FROM ";
+    s += Sqlite3Database::build_table_name(source, table);
+    if (where)
+    {
+        s += " WHERE ";
+        s += where;
+    }
+    return s;
+}
+
 Glib::ustring Sqlite3Database::build_create_table_sql(const std::string &name,
-        const std::initializer_list<std::pair<const char *, const char *> >
+        const std::initializer_list<std::pair<const char *, const char *>>
             &columns, const char *constraints)
 {
     auto s = Glib::ustring("CREATE TABLE IF NOT EXISTS ") + name + " (";

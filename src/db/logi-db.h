@@ -41,8 +41,11 @@ namespace logi
 class Database
 {
 public:
+    template<typename... Args> using Tuple = std::tuple<Args...>;
+    template<typename... Args> using Vector = std::vector<Tuple<Args...>>;
+
     /// Result type is either void or
-    /// std::shared_ptr<std::vector<std::tuple<...>>>.
+    /// std::shared_ptr<std::vector<Tuple...>>>.
     /// Input is a single row of data.
     template<class Result, typename... Args>
     class Query
@@ -52,11 +55,11 @@ public:
 
         virtual ~Query() = default;
 
-        virtual Result query(ArgsTuple &args) = 0;
+        virtual Result query(const ArgsTuple &args) = 0;
     };
 
     template<class Result, typename... Args>
-    using QueryPtr = std::shared_ptr<Query<Result, Args...> >;
+    using QueryPtr = std::shared_ptr<Query<Result, Args...>>;
 
     /// An insertion/modification statement that takes multiple rows of input
     template<typename... Args>
@@ -68,11 +71,11 @@ public:
 
         virtual ~Statement() = default;
 
-        virtual void execute(ArgsVector &args) = 0;
+        virtual void execute(const ArgsVector &args) = 0;
     };
 
     template<typename... Args>
-    using StatementPtr = std::shared_ptr<Statement<Args...> >;
+    using StatementPtr = std::shared_ptr<Statement<Args...>>;
 private:
     class CurriedStatementBase
     {
@@ -90,7 +93,7 @@ private:
         public CurriedStatementBase
     {
     public:
-        using ArgPtr = std::shared_ptr<std::tuple<Args...> >;
+        using ArgPtr = std::shared_ptr<std::tuple<Args...>>;
         using Slot = sigc::slot<void, Result>;
         using Q = Query<Result, Args...>;
               
@@ -122,7 +125,7 @@ private:
     template<class... Args> class CurriedStatement : public CurriedStatementBase
     {
     public:
-        using ArgPtr = std::shared_ptr<std::vector<std::tuple<Args...> > >;
+        using ArgPtr = std::shared_ptr<std::vector<std::tuple<Args...>>>;
         using Stmt = StatementPtr<Args...>;
               
         CurriedStatement(Stmt statement, ArgPtr args)
@@ -247,14 +250,20 @@ public:
     /**
      * statement args: orig_nw_id, service_id, provider_name
      */
-    virtual StatementPtr<id_t, id_t, Glib::ustring>
-    get_insert_service_provider_name_statement(const char *source) = 0;
+    virtual StatementPtr<id_t, id_t, id_t>
+    get_insert_service_provider_id_statement(const char *source) = 0;
 
     /**
      * statement args: network_id, service_id, lcn
      */
     virtual StatementPtr<id_t, id_t, id_t>
-    get_insert_primary_lcn_statement(const char *source) = 0;
+    get_insert_network_lcn_statement(const char *source) = 0;
+
+    virtual StatementPtr<Glib::ustring>
+    get_insert_source_statement() = 0;
+
+    virtual QueryPtr<Vector<id_t>, Glib::ustring>
+    get_provider_id_query(const char *source) = 0;
 
     /**
      * Queues a query to be executed on the database thread. The result callback
@@ -262,7 +271,7 @@ public:
      */
     template<class Result, typename... Args>
     void queue_query(QueryPtr<Result, Args...> query,
-            std::shared_ptr<std::tuple<Args...> > args,
+            std::shared_ptr<Tuple<Args...>> args,
             sigc::slot<void, Result> &callback)
     {
         queue_statement(new CurriedQuery<Result, Args...>
@@ -270,13 +279,33 @@ public:
     }
 
     /**
+     * Runs a query immediately. Must be called from database thread.
+     */
+    template<class Result, typename... Args>
+    Result run_query(QueryPtr<Result, Args...> query,
+            const Tuple<Args...> &args)
+    {
+        return query->query(args);;
+    }
+
+    /**
      * Like queue_query but for a statement with multiple inputs and no result.
      */
     template<typename... Args>
     void queue_statement(StatementPtr<Args...> statement,
-            std::shared_ptr<std::vector<std::tuple<Args...> > > args)
+            std::shared_ptr<Vector<Args...>> args)
     {
         queue_statement(new CurriedStatement<Args...>(statement, args));
+    }
+
+    /**
+     * Runs a statement immediately. Must be called from database thread.
+     */
+    template<typename... Args>
+    void run_statement(StatementPtr<Args...> stmt,
+            const Vector<Args...> &args)
+    {
+        stmt->execute(args);
     }
 
     /// Request a callback on the main thread when all preceding statements
@@ -312,11 +341,11 @@ protected:
 
     virtual void ensure_provider_name_table(const char *source) = 0;
 
-    virtual void ensure_service_provider_name_table(const char *source) = 0;
+    virtual void ensure_service_provider_id_table(const char *source) = 0;
 
-    virtual void ensure_primary_lcn_table(const char *source) = 0;
+    virtual void ensure_network_lcn_table(const char *source) = 0;
 
-    virtual void ensure_sources_table() = 0;
+    virtual void ensure_source_table() = 0;
 private:
     void thread_main();
 

@@ -128,6 +128,9 @@ public:
     void set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
             std::uint16_t lcn);
 
+    /// All the work is done on the database thread, so both this scanner and
+    /// the database must persist until the job is done:- use a
+    /// Database::PseudoQuery.
     void commit_to_database(Database &db, const char *source);
 
     friend ChannelScanner;

@@ -67,7 +67,9 @@ std::shared_ptr<Receiver> get_receiver()
     return std::shared_ptr<Receiver> { nullptr };
 }
 
-Glib::RefPtr<Glib::MainLoop> main_loop;
+static Glib::RefPtr<Glib::MainLoop> main_loop;
+
+static std::shared_ptr<Sqlite3Database> database;
 
 void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
 {
@@ -90,13 +92,12 @@ void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     if (status == MultiScanner::COMPLETE || status == MultiScanner::PARTIAL)
     {
         // Use shared_ptr to keep db alive in its own thread
-        // when we exit this scope. scanner can be destroyed though.
-        auto db = std::make_shared<Sqlite3Database>();
-        db->ensure_tables("Freeview");
-        scanner.commit_to_database(*db, "Freeview");
-        db->queue_callback([db]()
+        // when we exit this scope. Scanner is kept alive in main().
+        scanner.commit_to_database(*database, "Freeview");
+        database->queue_callback([]()
         {
             g_print("Committed all data to database\n");
+            database.reset();
             main_loop->quit();
         });
     }
@@ -117,6 +118,13 @@ int main()
     
     if (!rcv)
         return 1;
+
+    database = std::make_shared<Sqlite3Database>();
+    database->start();
+    database->ensure_tables("Freeview");
+    auto vp = std::make_shared<std::vector<std::tuple<Glib::ustring>>>();
+    vp->emplace_back("Freeview");
+    database->queue_statement(database->get_insert_source_statement(), vp);
 
     MultiScanner scanner { rcv,
         std::shared_ptr<ChannelScanner> { new FreeviewChannelScanner() },

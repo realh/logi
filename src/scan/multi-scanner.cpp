@@ -295,97 +295,104 @@ void MultiScanner::process_network_name(std::uint16_t network_id,
 
 void MultiScanner::commit_to_database(Database &db, const char *source)
 {
-    auto ins_nw = db.get_insert_network_info_statement(source);
-    auto ins_tuning = db.get_insert_tuning_statement(source);
-    auto ins_trans_serv = db.get_insert_transport_services_statement(source);
-    auto ins_serv_id = db.get_insert_service_id_statement(source);
-    auto ins_serv_name = db.get_insert_service_name_statement(source);
-    auto ins_prov_nm = db.get_insert_provider_name_statement(source);
-    auto ins_serv_prov_nm =
-        db.get_insert_service_provider_name_statement(source);
-    auto ins_prim_lcn = db.get_insert_primary_lcn_statement(source);
-
-    auto nw_v =
-        std::make_shared<std::vector<std::tuple<id_t, Glib::ustring> > >();
-    auto tuning_v =
-        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t, id_t> > >();
-    auto trans_serv_v =
-        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t, id_t> > >();
-    auto serv_id_v =
-        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t, id_t> > >();
-    auto serv_name_v =
-        std::make_shared<std::vector<std::tuple<id_t, id_t,
-                Glib::ustring> > >();
-    auto prov_nm_v =
-        std::make_shared<std::vector<std::tuple<Glib::ustring> > >();
-    auto serv_prov_nm_v =
-        std::make_shared<std::vector<std::tuple<id_t, id_t,
-                Glib::ustring> > >();
-    auto prim_lcn_v =
-        std::make_shared<std::vector<std::tuple<id_t, id_t, id_t> > >();
-
-    for (const auto &nw: nw_data_)
+    db.queue_callback([this, &db, source]()
     {
-        nw_v->emplace_back(nw.first, nw.second.get_network_name());
-    }
-    db.queue_statement(ins_nw, nw_v);
+        auto ins_nw = db.get_insert_network_info_statement(source);
+        auto ins_tuning = db.get_insert_tuning_statement(source);
+        auto ins_trans_serv =
+            db.get_insert_transport_services_statement(source);
+        auto ins_serv_id = db.get_insert_service_id_statement(source);
+        auto ins_serv_name = db.get_insert_service_name_statement(source);
+        auto ins_prov_nm = db.get_insert_provider_name_statement(source);
+        auto ins_serv_prov =
+            db.get_insert_service_provider_id_statement(source);
+        auto ins_nw_lcn = db.get_insert_network_lcn_statement(source);
+        auto query_prov_id = db.get_provider_id_query(source);
 
-    for (const auto &tsp: ts_data_)
-    {
-        const auto &ts = tsp.second;
-        auto tuning = ts.get_tuning();
-        if (tuning)
+        std::vector<std::tuple<id_t, Glib::ustring>>        nw_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t>>     tuning_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t>>     trans_serv_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t>>     serv_id_v;
+        std::vector<std::tuple<id_t, id_t, Glib::ustring>>  serv_name_v;
+        std::vector<std::tuple<Glib::ustring>>              prov_nm_v;
+        std::vector<std::tuple<id_t, id_t, id_t>>           serv_prov_v;
+        std::vector<std::tuple<id_t, id_t, id_t>>           nw_lcn_v;
+
+        for (const auto &nw: nw_data_)
         {
-            auto props = tuning->get_props();
-            for (std::uint32_t n = 0; n < props->num; ++n)
-            {
-                const auto &prop = props->props[n];
-                tuning_v->emplace_back(ts.get_original_network_id(),
-                        ts.get_transport_stream_id(),
-                        prop.cmd, prop.u.data);
-            }
-            for (const auto &s: ts.get_service_ids())
-            {
-                trans_serv_v->emplace_back(ts.get_original_network_id(),
-                        ts.get_network_id(), ts.get_transport_stream_id(),
-                        s);
+            nw_v.emplace_back(nw.first, nw.second.get_network_name());
+        }
+        db.run_statement(ins_nw, nw_v);
 
+        for (const auto &tsp: ts_data_)
+        {
+            const auto &ts = tsp.second;
+            auto tuning = ts.get_tuning();
+            if (tuning)
+            {
+                auto props = tuning->get_props();
+                for (std::uint32_t n = 0; n < props->num; ++n)
+                {
+                    const auto &prop = props->props[n];
+                    tuning_v.emplace_back(ts.get_original_network_id(),
+                            ts.get_transport_stream_id(),
+                            prop.cmd, prop.u.data);
+                }
+                for (const auto &s: ts.get_service_ids())
+                {
+                    trans_serv_v.emplace_back(ts.get_original_network_id(),
+                            ts.get_network_id(), ts.get_transport_stream_id(),
+                            s);
+
+                }
             }
         }
-    }
-    db.queue_statement(ins_nw, nw_v);
-    db.queue_statement(ins_tuning, tuning_v);
+        db.run_statement(ins_nw, nw_v);
+        db.run_statement(ins_tuning, tuning_v);
 
-    for (const auto &sp: service_data_)
-    {
-        const auto &s = sp.second;
-        serv_id_v->emplace_back(s.get_original_network_id(), s.get_service_id(),
-                s.get_ts_id(), s.get_service_type());
-        const auto &sn = s.get_name();
-        if (sn.size())
+        for (const auto &sp: service_data_)
         {
-            serv_name_v->emplace_back(s.get_original_network_id(),
-                    s.get_service_id(), sn);
+            const auto &s = sp.second;
+            serv_id_v.emplace_back(s.get_original_network_id(),
+                    s.get_service_id(), s.get_ts_id(), s.get_service_type());
+            const auto &sn = s.get_name();
+            if (sn.size())
+            {
+                serv_name_v.emplace_back(s.get_original_network_id(),
+                        s.get_service_id(), sn);
+            }
+            const auto &spn = s.get_provider_name();
+            if (spn.size())
+            {
+                prov_nm_v.emplace_back(spn);
+            }
         }
-        const auto &spn = s.get_provider_name();
-        if (spn.size())
+        // Global provider names have to be inserted before
+        // service_provider_names
+        db.run_statement(ins_prov_nm, prov_nm_v);
+        db.run_statement(ins_serv_name, serv_name_v);
+        // Now read back rowids of provider names and build a vector mapping
+        // service_ids to provider ids.
+        for (const auto &sp: service_data_)
         {
-            prov_nm_v->emplace_back(spn);
-            serv_prov_nm_v->emplace_back(s.get_original_network_id(),
-                    s.get_service_id(), spn);
+            const auto &s = sp.second;
+            std::tuple<Glib::ustring> a(s.get_provider_name());
+            auto prov = db.run_query(query_prov_id, a);
+            if (prov.size())
+            {
+                serv_prov_v.emplace_back(s.get_original_network_id(),
+                        s.get_service_id(), std::get<0>(prov[0]));
+            }
         }
-    }
-    // Global provider names have to be inserted before service_provider_names
-    db.queue_statement(ins_prov_nm, prov_nm_v);
-    db.queue_statement(ins_serv_name, serv_name_v);
-    db.queue_statement(ins_serv_prov_nm, serv_prov_nm_v);
+        db.run_statement(ins_serv_prov, serv_prov_v);
 
-    for (const auto &lp: lcn_data_)
-    {
-        auto ns = lp.first;
-        prim_lcn_v->emplace_back((ns >> 16) &0xffff, ns & 0xff, lp.second);
-    }
-    db.queue_statement(ins_prim_lcn, prim_lcn_v);
+        for (const auto &lp: lcn_data_)
+        {
+            auto ns = lp.first;
+            nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xff, lp.second);
+        }
+        db.run_statement(ins_nw_lcn, nw_lcn_v);
+    });
 }
 
 }
