@@ -119,7 +119,7 @@ public:
             const Descriptor &desc);
 
     void process_service_descriptor(std::uint16_t orig_nw_id,
-            std::uint16_t service_id, std::uint16_t ts_id,
+            std::uint16_t ts_id, std::uint16_t service_id, 
             const Descriptor &desc);
 
     void process_network_name(std::uint16_t network_id,

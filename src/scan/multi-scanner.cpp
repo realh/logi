@@ -233,13 +233,14 @@ void MultiScanner::process_delivery_system_descriptor(std::uint16_t nw_id,
 }
 
 void MultiScanner::process_service_descriptor(std::uint16_t orig_nw_id,
-        std::uint16_t service_id, std::uint16_t ts_id, const Descriptor &desc)
+        std::uint16_t ts_id, std::uint16_t service_id, const Descriptor &desc)
 {
     ServiceDescriptor sdesc(desc);
-    g_debug("  Type %d, provider_name '%s', name '%s'",
+    g_print("Service %d onw %d type %d name '%s' provider '%s'\n",
+            service_id, orig_nw_id,
             sdesc.service_type(),
-            sdesc.service_provider_name().c_str(),
-            sdesc.service_name().c_str());
+            sdesc.service_name().c_str(),
+            sdesc.service_provider_name().c_str());
     auto &sdat = get_service_data(orig_nw_id, service_id);
     sdat.set_scanned();
     sdat.set_name(sdesc.service_name());
@@ -368,7 +369,8 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
             serv_id_v.emplace_back(s.get_original_network_id(),
                     s.get_service_id(), s.get_ts_id(), s.get_service_type());
             const auto &sn = s.get_name();
-            g_print("  %d %s\n", s.get_service_id(), sn.c_str());
+            g_print("  %d onw %d %s\n", s.get_service_id(),
+                    s.get_original_network_id(), sn.c_str());
             if (sn.size())
             {
                 serv_name_v.emplace_back(s.get_original_network_id(),
