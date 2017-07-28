@@ -383,6 +383,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         // Global provider names have to be inserted before
         // service_provider_names
         db.run_statement(ins_prov_nm, prov_nm_v);
+        db.run_statement(ins_serv_id, serv_id_v);
         db.run_statement(ins_serv_name, serv_name_v);
         // Now read back rowids of provider names and build a vector mapping
         // service_ids to provider ids.
