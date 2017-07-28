@@ -108,9 +108,10 @@ void NITProcessor::process_ts_data(const TSSectionData &ts)
     current_ts_id_ = ts.transport_stream_id();
 
     // Make sure all transports referred to are in our table, even if we don't
-    // hav euseful info for them yet. That way we can detect the presence of
+    // have useful info for them yet. That way we can detect the presence of
     // Freeview HD channels and keep scanning until we get their frequency
-    mscanner_->get_transport_stream_data(current_nw_id_, current_ts_id_);
+    mscanner_->get_transport_stream_data(ts.original_network_id(),
+            current_ts_id_);
 
     auto descs = ts.get_transport_descriptors();
     /*
