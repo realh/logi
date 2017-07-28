@@ -139,7 +139,7 @@ void NITProcessor::process_descriptor(const Descriptor &desc)
             break;
         case Descriptor::SERVICE_LIST:
             mscanner_->process_service_list_descriptor(current_orig_nw_id_,
-                    current_ts_id_, desc);
+                    current_nw_id_, current_ts_id_, desc);
             break;
         case Descriptor::TERRESTRIAL_DELIVERY_SYSTEM:
             mscanner_->process_delivery_system_descriptor(current_nw_id_,

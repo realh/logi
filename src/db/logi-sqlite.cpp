@@ -256,7 +256,7 @@ void Sqlite3Database::ensure_transport_services_table(const char *source)
             {"transport_stream_id", "INTEGER"},
             {"service_id", "INTEGER"},
         },
-        "PRIMARY KEY (original_network_id, network_id, transport_stream_id)"));
+        "PRIMARY KEY (original_network_id, service_id)"));
 }
 
 void Sqlite3Database::ensure_service_id_table(const char *source)

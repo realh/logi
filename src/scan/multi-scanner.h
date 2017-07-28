@@ -112,7 +112,7 @@ public:
             std::uint16_t service_id);
 
     void process_service_list_descriptor(std::uint16_t orig_nw_id,
-            std::uint16_t ts_id, const Descriptor &desc);
+            std::uint16_t nw_id, std::uint16_t ts_id, const Descriptor &desc);
 
     void process_delivery_system_descriptor(std::uint16_t nw_id,
             std::uint16_t orig_nw_id, std::uint16_t ts_id,
