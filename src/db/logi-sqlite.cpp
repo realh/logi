@@ -321,7 +321,6 @@ void Sqlite3Database::ensure_source_table()
 
 void Sqlite3Database::execute(const Glib::ustring &sql)
 {
-    g_print("Executing SQL {%s}\n", sql.c_str());
     sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(sqlite3_, sql.c_str(), -1, &stmt, nullptr);
     if (result != SQLITE_OK)
