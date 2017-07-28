@@ -236,7 +236,7 @@ void MultiScanner::process_service_descriptor(std::uint16_t orig_nw_id,
         std::uint16_t ts_id, std::uint16_t service_id, const Descriptor &desc)
 {
     ServiceDescriptor sdesc(desc);
-    g_print("Service %d onw %d type %d name '%s' provider '%s'\n",
+    g_debug("Service %d onw %d type %d name '%s' provider '%s'",
             service_id, orig_nw_id,
             sdesc.service_type(),
             sdesc.service_name().c_str(),
@@ -320,11 +320,11 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         std::vector<std::tuple<id_t, id_t, id_t>>           serv_prov_v;
         std::vector<std::tuple<id_t, id_t, id_t>>           nw_lcn_v;
 
-        g_print("Committing data\n");
+        g_debug("Committing data");
 
         for (const auto &nw: nw_data_)
         {
-            g_print("  Network %s\n", nw.second.get_network_name().c_str());
+            g_debug("  Network %s", nw.second.get_network_name().c_str());
             nw_v.emplace_back(nw.first, nw.second.get_network_name());
         }
         db.run_statement(ins_nw, nw_v);
@@ -332,15 +332,15 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         for (const auto &tsp: ts_data_)
         {
             const auto &ts = tsp.second;
-            g_print("Transport stream %d (onw %d, nw %d); "
-                    "key 0x%08x (%d, %d)\n",
+            g_debug("Transport stream %d (onw %d, nw %d); "
+                    "key 0x%08x (%d, %d)",
                     ts.get_transport_stream_id(),
                     ts.get_original_network_id(), ts.get_network_id(),
                     tsp.first, tsp.first & 0xffff, tsp.first >> 16);
             auto tuning = ts.get_tuning();
             if (tuning)
             {
-                g_print("  %s\n", tuning->linuxtv_description().c_str());
+                g_debug("  %s", tuning->linuxtv_description().c_str());
                 auto props = tuning->get_props();
                 for (std::uint32_t n = 0; n < props->num; ++n)
                 {
@@ -352,13 +352,11 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
             }
             for (const auto &s: ts.get_service_ids())
             {
-                g_print("%d ", s);
                 trans_serv_v.emplace_back(ts.get_original_network_id(),
                         ts.get_network_id(), ts.get_transport_stream_id(),
                         s);
 
             }
-            g_print("\n");
         }
         db.run_statement(ins_nw, nw_v);
         db.run_statement(ins_tuning, tuning_v);
@@ -369,7 +367,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
             serv_id_v.emplace_back(s.get_original_network_id(),
                     s.get_service_id(), s.get_ts_id(), s.get_service_type());
             const auto &sn = s.get_name();
-            g_print("  %d onw %d %s\n", s.get_service_id(),
+            g_debug("  %d onw %d %s", s.get_service_id(),
                     s.get_original_network_id(), sn.c_str());
             if (sn.size())
             {
@@ -404,7 +402,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         for (const auto &lp: lcn_data_)
         {
             auto ns = lp.first;
-            nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xff, lp.second);
+            nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xffff, lp.second);
         }
         db.run_statement(ins_nw_lcn, nw_lcn_v);
     });
