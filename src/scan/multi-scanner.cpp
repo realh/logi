@@ -313,14 +313,14 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         auto ins_nw_lcn = db.get_insert_network_lcn_statement(source);
         auto query_prov_id = db.get_provider_id_query(source);
 
-        std::vector<std::tuple<id_t, Glib::ustring>>        nw_v;
-        std::vector<std::tuple<id_t, id_t, id_t, id_t>>     tuning_v;
-        std::vector<std::tuple<id_t, id_t, id_t, id_t>>     trans_serv_v;
-        std::vector<std::tuple<id_t, id_t, id_t, id_t>>     serv_id_v;
-        std::vector<std::tuple<id_t, id_t, Glib::ustring>>  serv_name_v;
-        std::vector<std::tuple<Glib::ustring>>              prov_nm_v;
-        std::vector<std::tuple<id_t, id_t, id_t>>           serv_prov_v;
-        std::vector<std::tuple<id_t, id_t, id_t>>           nw_lcn_v;
+        std::vector<std::tuple<id_t, Glib::ustring>>            nw_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t>>         tuning_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t>>         trans_serv_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t, id_t>>   serv_id_v;
+        std::vector<std::tuple<id_t, id_t, Glib::ustring>>      serv_name_v;
+        std::vector<std::tuple<Glib::ustring>>                  prov_nm_v;
+        std::vector<std::tuple<id_t, id_t, id_t>>               serv_prov_v;
+        std::vector<std::tuple<id_t, id_t, id_t>>               nw_lcn_v;
 
         g_debug("Committing data");
 
@@ -361,11 +361,13 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         db.run_statement(ins_tuning, tuning_v);
         db.run_statement(ins_trans_serv, trans_serv_v);
 
+
         for (const auto &sp: service_data_)
         {
             const auto &s = sp.second;
             serv_id_v.emplace_back(s.get_original_network_id(),
-                    s.get_service_id(), s.get_ts_id(), s.get_service_type());
+                    s.get_service_id(), s.get_ts_id(), s.get_service_type(),
+                    s.get_free_ca_mode());
             const auto &sn = s.get_name();
             g_debug("  %d onw %d %s", s.get_service_id(),
                     s.get_original_network_id(), sn.c_str());

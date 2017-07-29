@@ -168,13 +168,13 @@ Sqlite3Database::get_insert_transport_services_statement(const char *source)
             "transport_stream_id", "service_id"});
 }
 
-Database::StatementPtr<id_t, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_service_id_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
+    return build_insert_statement<id_t, id_t, id_t, id_t, id_t>(source,
             SERVICE_ID_TABLE,
             {"original_network_id", "service_id",
-            "transport_stream_id", "service_type"});
+            "transport_stream_id", "service_type", "free_ca_mode"});
 }
 
 Database::StatementPtr<id_t, id_t, Glib::ustring>
@@ -267,6 +267,7 @@ void Sqlite3Database::ensure_service_id_table(const char *source)
             {"transport_stream_id", "INTEGER"},
             {"service_id", "INTEGER"},
             {"service_type", "INTEGER"},
+            {"free_ca_mode", "INTEGER"},
         },
         "PRIMARY KEY (original_network_id, service_id)"));
 }

@@ -1,0 +1,222 @@
+#!/usr/bin/env python
+
+"""
+Usage: logi-to-vdr [-s SOURCE] [-n NETWORK] [-o OFFSET] FILE
+
+SOURCE is an optional source name. If not given the first found in the
+database is used. The current test scanner uses "Freeview".
+
+NETWORK is an optional network name. If not given the first found in the
+database is used.
+
+OFFSET is optional offset to add to lcns (channel numbers).
+
+FILE is logi's sqlite database, usually at ~/.local/share/logi/database.sqlite
+
+Outputs a channels.conf for VDR.
+
+Notes:
+PIDs are all 0 so you will have to enable VDR's "Write pids" option.
+CA is set to 0xff for all encrypted channels.
+All satellite channels are assumed to come from 28.2E.
+"""
+
+from __future__ import print_function
+
+import argparse
+import os
+import sqlite3
+import sys
+
+DTV_DELIVERY_SYSTEM = 17
+DTV_FREQUENCY = 3
+DTV_BANDWIDTH_HZ = 5
+DTV_MODULATION = 4
+DTV_HIERARCHY = 40
+DTV_CODE_RATE_HP = 36
+DTV_CODE_RATE_LP = 37
+DTV_GUARD_INTERVAL = 38
+DTV_TRANSMISSION_MODE = 39
+
+fec_to_vdr = [0, 12, 23, 34, 45, 56, 67, 78, 89, 0, 35, 910, 25]
+
+mod_to_vdr = [2, 16, 32, 64, 128, 256, 999, 10, 11, 5, 6, 999, 12, 999] 
+
+def bw_to_vdr(b):
+    if b == 1712000:
+        return 1712
+    else:
+        return int(b / 1000000)
+
+tm_to_vdr = [2, 8, 0, 4, 1, 16, 32, 0, 0]
+
+gi_to_vdr = [32, 16, 8, 4, 0, 128, 19128, 19256, 0, 0, 0]
+
+hier_to_vdr = [0, 1, 2, 4, 0]
+
+def tuning_to_vdr_t(t):
+    return "I0C%dD%dM%dB%dT%dG%dY%d" % \
+            (fec_to_vdr[t.get(DTV_CODE_RATE_HP, 0)],
+            fec_to_vdr[t.get(DTV_CODE_RATE_LP, 0)],
+            mod_to_vdr[t.get(DTV_MODULATION, 6)],
+            bw_to_vdr(t.get(DTV_BANDWIDTH_HZ, 8000000)),
+            tm_to_vdr[t.get(DTV_TRANSMISSION_MODE, 2)],
+            gi_to_vdr[t.get(DTV_GUARD_INTERVAL, 4)],
+            hier_to_vdr[t.get(DTV_HIERARCHY, 0)])
+
+def tuning_to_vdr(t):
+    return tuning_to_vdr_t(t)
+
+
+def get_source(conn):
+    curs = conn.cursor()
+    curs.execute("SELECT source_name FROM sources")
+    return curs.fetchone()[0]
+
+def get_network(conn, source):
+    curs = conn.cursor()
+    curs.execute("SELECT name FROM " + source + "_network_info")
+    return curs.fetchone()[0]
+
+
+def load_from_sqlite(filename, source = None, network = None, offset = 0):
+    conn = sqlite3.connect(filename)
+    if not source:
+        source = get_source(conn)
+    if not network:
+        network = get_network(conn, source)
+
+    tut = source + '_tuning'
+    nit = source + '_network_info'
+    nlt = source + '_network_lcns'
+    tst = source + '_transport_services'
+    snt = source + '_service_names'
+    sit = source + '_service_ids'
+    pnt = source + '_provider_names'
+    spt = source + '_service_provider_id'
+
+    curs = conn.cursor()
+
+    curs.execute("SELECT network_id FROM %s WHERE name = ?" % nit, (network,))
+    nw_id = curs.fetchone()[0]
+
+    # Transport stream tunings
+    tunings = {}
+    curs.execute('SELECT * FROM ' + tut)
+    for row in curs.fetchall():
+        if not row:
+            break
+        key = (row[0] << 16) | row[1]
+        t = tunings.get(key)
+        if t is None:
+            t = {}
+            tunings[key] = t
+        t[row[2]] = row[3]
+    for key in tunings.keys():
+        props = tunings[key]
+        tunings[key] = (props[DTV_FREQUENCY], tuning_to_vdr(props))
+
+    # Services
+    sel = 'SELECT %s.lcn, %s.original_network_id, ' \
+            '%s.network_id, %s.service_id, ' \
+            '%s.transport_stream_id, %s.free_ca_mode, %s.name' \
+            % (nlt, tst, tst, tst, tst, sit, snt)
+    frm = ' FROM %s, %s, %s, %s' % (nlt, tst, sit, snt)
+    whr = ' WHERE %s.network_id = %s.network_id' \
+            ' AND %s.service_id = %s.service_id' \
+            ' AND %s.service_id = %s.service_id' \
+            ' AND %s.original_network_id = %s.original_network_id' \
+            ' AND %s.service_id = %s.service_id' \
+            ' AND %s.original_network_id = %s.original_network_id' \
+            % (nlt, tst, nlt, tst, tst, sit, tst, sit, sit, snt, sit, snt)
+    oby = ' ORDER BY lcn'
+    curs.execute(sel + frm + whr + oby)
+    
+    rows = []
+    for row in curs.fetchall():
+        row = list(row)
+        if not row:
+            break
+        # Try to get provider name
+        curs.execute('SELECT provider_id, provider_name FROM %s, %s' \
+                ' WHERE %s.original_network_id = ?' \
+                ' AND %s.service_id = ?' \
+                ' AND %s.provider_id = %s.rowid' \
+                % (spt, pnt, spt, spt, spt, pnt), (row[1], row[3]))
+        pn = curs.fetchone()
+        if pn and pn[0]:
+            row.append(pn[0])
+        else:
+            #row.append(source + '-' + network)
+            row.append(None)
+
+        # Get tuning
+        t = tunings.get((row[1] << 16) | row[4])
+        if not t:
+            continue
+        row.append(t)
+
+        rows.append(row)
+
+    return rows
+
+
+def row_to_vdr(row):
+    if row[7]:
+        name = row[6] + ';' + row[7]
+    else:
+        name = row[6]
+    #if t[0][0] == 'S':
+    #    f = int(t[1]) / 1000
+    #    params = tuning_to_params_s(t)
+    #    srate = int(t[3]) / 1000
+    #    src = "S28.2E"
+    #elif t[0][0] == 'T':
+    #    if t[0] == 'T2':
+    #        f = int(t[3])
+    #    else:
+    #        f = int(t[1])
+    #    params = tuning_to_params_t(t)
+    #    srate = 27500;
+    #    src = t[0]
+    srate = 27500
+    src = 'T'
+    if row[5]:
+        ca = "ff"
+    else:
+        ca = "0"
+    tuning = row[8]
+    return "%s:%d:%s:%s:%d:0:0:0:%s:%d:%d:%d" % \
+            (name, tuning[0], tuning[1], src, srate, ca, row[3], row[2], row[4])
+
+
+def print_chans(rows):
+    lcn = -1000
+    for row in rows:
+        lcn += 1
+        if row[0] != lcn:
+            lcn = row[0]
+            print(":@%d " % lcn)
+        print(row_to_vdr(row))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser( \
+            description = "Output VDR channels.conf on stdout")
+    parser.add_argument('-s', '--source', help="Source name eg Freeview")
+    parser.add_argument('-n', '--network', help="Network name eg South")
+    parser.add_argument('-o', '--offset', type=int, default=0,
+            help="Offset for lcns (channel numbers)")
+    parser.add_argument('-d', '--database', 
+            help="sqlite3 database to fetch the data from")
+
+    args = parser.parse_args(sys.argv[1:])
+
+    if args.database:
+        database = args.database
+    else:
+        xdg = os.getenv("XDG_DATA_HOME") or os.path.expanduser('~/.local/share')
+        database = os.path.join(xdg, "logi", "database.sqlite")
+
+    rows = load_from_sqlite(database, args.source, args.network, args.offset)
+    print_chans(rows)

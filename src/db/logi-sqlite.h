@@ -204,7 +204,7 @@ public:
     /**
      * statement args: orig_nw_id, service_id, ts_id
      */
-    virtual StatementPtr<id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) override;
 
     /**

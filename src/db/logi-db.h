@@ -230,9 +230,9 @@ public:
         get_insert_transport_services_statement(const char *source) = 0;
 
     /**
-     * statement args: orig_nw_id, service_id, ts_id, service_type
+     * statement args: orig_nw_id, service_id, ts_id, service_type, free_ca_mode
      */
-    virtual StatementPtr<id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t, id_t>
         get_insert_service_id_statement(const char *source) = 0;
 
     /**

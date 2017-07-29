@@ -150,11 +150,13 @@ public:
             std::uint16_t orig_nw_id = 0,
             std::uint16_t ts_id = 0,
             std::uint8_t service_type = 0,
+            bool free_ca_mode = false,
             bool scanned = false) :
         service_id_(service_id),
         original_network_id_(orig_nw_id),
         ts_id_(ts_id),
         service_type_(service_type),
+        free_ca_mode_(free_ca_mode),
         scanned_(scanned)
     {}
 
@@ -218,6 +220,16 @@ public:
         return provider_name_;
     }
 
+    void set_free_ca_mode(bool encrypted)
+    {
+        free_ca_mode_ = encrypted;
+    }
+
+    bool get_free_ca_mode() const
+    {
+        return free_ca_mode_;
+    }
+
     void set_scanned()
     {
         scanned_ = true;
@@ -233,6 +245,7 @@ private:
     std::uint16_t ts_id_;
     std::uint8_t service_type_;
     Glib::ustring name_, provider_name_;
+    bool free_ca_mode_;
     bool scanned_;
 };
 
