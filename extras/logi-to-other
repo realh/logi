@@ -79,7 +79,8 @@ def get_network(conn, source):
     return curs.fetchone()[0]
 
 
-def load_from_sqlite(filename, source = None, network = None, offset = 0):
+def load_from_sqlite(filename, vdr = False,
+        source = None, network = None, offset = 0):
     conn = sqlite3.connect(filename)
     if not source:
         source = get_source(conn)
@@ -102,33 +103,43 @@ def load_from_sqlite(filename, source = None, network = None, offset = 0):
 
     # Transport stream tunings
     tunings = {}
-    curs.execute('SELECT * FROM ' + tut)
-    for row in curs.fetchall():
-        if not row:
-            break
-        key = (row[0] << 16) | row[1]
-        t = tunings.get(key)
-        if t is None:
-            t = {}
-            tunings[key] = t
-        t[row[2]] = row[3]
-    for key in tunings.keys():
-        props = tunings[key]
-        tunings[key] = (props[DTV_FREQUENCY], tuning_to_vdr(props))
+    if vdr:
+        curs.execute('SELECT * FROM ' + tut)
+        for row in curs.fetchall():
+            if not row:
+                break
+            key = (row[0] << 16) | row[1]
+            t = tunings.get(key)
+            if t is None:
+                t = {}
+                tunings[key] = t
+            t[row[2]] = row[3]
+        for key in tunings.keys():
+            props = tunings[key]
+            tunings[key] = (props[DTV_FREQUENCY], tuning_to_vdr(props))
 
     # Services
-    sel = 'SELECT %s.lcn, %s.original_network_id, ' \
-            '%s.network_id, %s.service_id, ' \
-            '%s.transport_stream_id, %s.free_ca_mode, %s.name' \
-            % (nlt, tst, tst, tst, tst, sit, snt)
-    frm = ' FROM %s, %s, %s, %s' % (nlt, tst, sit, snt)
-    whr = ' WHERE %s.network_id = %s.network_id' \
-            ' AND %s.service_id = %s.service_id' \
-            ' AND %s.service_id = %s.service_id' \
-            ' AND %s.original_network_id = %s.original_network_id' \
-            ' AND %s.service_id = %s.service_id' \
-            ' AND %s.original_network_id = %s.original_network_id' \
-            % (nlt, tst, nlt, tst, tst, sit, tst, sit, sit, snt, sit, snt)
+    if vdr:
+        sel = 'SELECT %s.lcn, %s.original_network_id, ' \
+                '%s.network_id, %s.service_id, ' \
+                '%s.transport_stream_id, %s.free_ca_mode, %s.name' \
+                % (nlt, tst, tst, tst, tst, sit, snt)
+        frm = ' FROM %s, %s, %s, %s' % (nlt, tst, sit, snt)
+        whr = ' WHERE %s.network_id = %s.network_id' \
+                ' AND %s.service_id = %s.service_id' \
+                ' AND %s.service_id = %s.service_id' \
+                ' AND %s.original_network_id = %s.original_network_id' \
+                ' AND %s.service_id = %s.service_id' \
+                ' AND %s.original_network_id = %s.original_network_id' \
+                % (nlt, tst, nlt, tst, tst, sit, tst, sit, sit, snt, sit, snt)
+    else:
+        sel = 'SELECT %s.lcn, %s.service_id, ' \
+                '%s.transport_stream_id, %s.network_id' \
+                % (nlt, tst, tst, tst)
+        frm = ' FROM %s, %s' % (nlt, tst)
+        whr = ' WHERE %s.network_id = %s.network_id' \
+                ' AND %s.service_id = %s.service_id' \
+                % (nlt, tst, nlt, tst)
     oby = ' ORDER BY lcn'
     curs.execute(sel + frm + whr + oby)
     
@@ -137,24 +148,25 @@ def load_from_sqlite(filename, source = None, network = None, offset = 0):
         row = list(row)
         if not row:
             break
-        # Try to get provider name
-        curs.execute('SELECT provider_id, provider_name FROM %s, %s' \
-                ' WHERE %s.original_network_id = ?' \
-                ' AND %s.service_id = ?' \
-                ' AND %s.provider_id = %s.rowid' \
-                % (spt, pnt, spt, spt, spt, pnt), (row[1], row[3]))
-        pn = curs.fetchone()
-        if pn and pn[0]:
-            row.append(pn[0])
-        else:
-            #row.append(source + '-' + network)
-            row.append(None)
+        if vdr:
+            # Try to get provider name
+            curs.execute('SELECT provider_id, provider_name FROM %s, %s' \
+                    ' WHERE %s.original_network_id = ?' \
+                    ' AND %s.service_id = ?' \
+                    ' AND %s.provider_id = %s.rowid' \
+                    % (spt, pnt, spt, spt, spt, pnt), (row[1], row[3]))
+            pn = curs.fetchone()
+            if pn and pn[0]:
+                row.append(pn[0])
+            else:
+                #row.append(source + '-' + network)
+                row.append(None)
 
-        # Get tuning
-        t = tunings.get((row[1] << 16) | row[4])
-        if not t:
-            continue
-        row.append(t)
+            # Get tuning
+            t = tunings.get((row[1] << 16) | row[4])
+            if not t:
+                continue
+            row.append(t)
 
         rows.append(row)
 
@@ -190,7 +202,21 @@ def row_to_vdr(row):
             (name, tuning[0], tuning[1], src, srate, ca, row[3], row[2], row[4])
 
 
-def print_chans(rows):
+def row_to_mythtv(row):
+    print("UPDATE channel SET channum = %d " \
+            "WHERE serviceid = %d AND mplexid = " \
+            "(SELECT mplexid FROM dtv_multiplex WHERE transportid = %d);" \
+            % tuple(row[:3]))
+    print("-- No adverts in BBC")
+    print("UPDATE channel SET commmethod=-2 " \
+            "WHERE name LIKE '%BBC%' OR name LIKE 'CBeebies%';")
+    print("-- Default channel setting")
+    print("UPDATE settings SET data = " \
+            "(SELECT channum FROM channel ORDER BY channum ASC LIMIT 1) " \
+            "WHERE value='DefaultTVChannel';")
+
+
+def print_vdr(rows):
     lcn = -1000
     for row in rows:
         lcn += 1
@@ -200,9 +226,17 @@ def print_chans(rows):
         print(row_to_vdr(row))
 
 
+def print_myth(rows):
+    for row in rows:
+        print(row_to_mythtv(row))
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser( \
-            description = "Output VDR channels.conf on stdout")
+    parser = argparse.ArgumentParser(description = \
+            "Output VDR channels.conf or LCNs for mythtv on stdout")
+    parser.add_argument('-v', '--vdr',
+            help="Output VDR channels.conf " \
+                    "(otherwise an SQL script to set LCNs in MythTV)")
     parser.add_argument('-s', '--source', help="Source name eg Freeview")
     parser.add_argument('-n', '--network', help="Network name eg South")
     parser.add_argument('-o', '--offset', type=int, default=0,
@@ -218,5 +252,9 @@ if __name__ == "__main__":
         xdg = os.getenv("XDG_DATA_HOME") or os.path.expanduser('~/.local/share')
         database = os.path.join(xdg, "logi", "database.sqlite")
 
-    rows = load_from_sqlite(database, args.source, args.network, args.offset)
-    print_chans(rows)
+    rows = load_from_sqlite(database, args.vdr,
+            args.source, args.network, args.offset)
+    if args.vdr:
+        print_vdr(rows)
+    else:
+        print_myth(rows)
