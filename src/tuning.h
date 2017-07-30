@@ -141,6 +141,8 @@ private:
 
     void parse_dvb_s(guint n, char **tokens, const char *tuning_str);
 
+    void parse_dvb_t(guint n, char **tokens, const char *tuning_str);
+
     static guint32 parse_number(const char *fragment, const char *whole);
 
     static guint32 parse_code_rate(const char *fragment, const char *whole);
@@ -148,6 +150,16 @@ private:
     static guint32 parse_roll_off(const char *fragment, const char *whole);
 
     static guint32 parse_modulation(const char *fragment, const char *whole);
+
+    static guint32 parse_bandwidth(const char *fragment, const char *whole);
+
+    static guint32 parse_transmission_mode(const char *fragment,
+            const char *whole);
+
+    static guint32 parse_guard_interval(const char *fragment,
+            const char *whole);
+
+    static guint32 parse_hierarchy(const char *fragment, const char *whole);
 
     static Glib::Error report_error(TuningError code, const char *desc);
 

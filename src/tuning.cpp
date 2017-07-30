@@ -110,9 +110,10 @@ static struct prop_table_t_ roll_off_table[] = {
 
 TuningProperties::TuningProperties(const char *s)
 {
-    if (s[0] != 'S')
+    if (s[0] != 'S' && s[0] != 'T')
     {
-        throw report_parse_error("Only satellite is supported", s);
+        throw report_parse_error("Only satellite and terrestrial are supported",
+                s);
     }
 
     std::unique_ptr<char *, void (*)(char **)>
@@ -135,7 +136,10 @@ TuningProperties::TuningProperties(const char *s)
         }
     }
 
-    parse_dvb_s(n, tokens.get(), s);
+    if (s[0] == 'S')
+        parse_dvb_s(n, tokens.get(), s);
+    else
+        parse_dvb_t(n, tokens.get(), s);
 
     append_prop_priv(DTV_INVERSION, INVERSION_AUTO);
     append_prop_priv(DTV_TUNE, 1);
@@ -296,6 +300,65 @@ void TuningProperties::query_key_props(fe_delivery_system_t &t, guint32 &f,
     }
 }
 
+void TuningProperties::parse_dvb_t(unsigned n, char **tokens, const char *s)
+{
+    if (n < 9)
+    {
+        throw report_parse_error("Too few parameters", s);
+    }
+
+    std::uint32_t val;
+    unsigned i;
+
+    switch (tokens[0][1])
+    {
+        case '2':
+            val = SYS_DVBT2;
+            break;
+        case '1':
+            val = SYS_DVBT;
+            break;
+        case 0:
+            val = n > 9 ? SYS_DVBT2 : SYS_DVBT;
+            break;
+        default:
+            throw report_parse_error("Invalid type", s);
+    }
+    append_prop_priv(DTV_DELIVERY_SYSTEM, val);
+
+    if (val == SYS_DVBT2)
+    {
+        i = 3;
+        append_prop_priv(DTV_STREAM_ID, parse_number(tokens[1], s));
+    }
+    else
+    {
+        i = 1;
+    }
+
+    val = parse_number(tokens[i], s);
+    if (val < 1000)
+        val *= 1000000;
+    else if (val < 1000000)
+        val *= 1000;
+    append_prop_priv(DTV_FREQUENCY, val);
+
+    val = parse_bandwidth(tokens[i + 1], s);
+    if (val != G_MAXUINT32)
+        append_prop_priv(DTV_BANDWIDTH_HZ, val);
+
+    append_prop_priv(DTV_CODE_RATE_HP, parse_code_rate(tokens[i + 2], s));
+    append_prop_priv(DTV_CODE_RATE_LP, parse_code_rate(tokens[i + 3], s));
+    append_prop_priv(DTV_MODULATION, parse_modulation(tokens[i + 4], s));
+    append_prop_priv(DTV_TRANSMISSION_MODE,
+            parse_transmission_mode(tokens[i + 5], s));
+    append_prop_priv(DTV_GUARD_INTERVAL,
+            parse_guard_interval(tokens[i + 6], s));
+    append_prop_priv(DTV_HIERARCHY, parse_hierarchy(tokens[i + 7], s));
+
+    fix_props();
+}
+
 void TuningProperties::parse_dvb_s(guint n, char **tokens, const char *s)
 {
     constexpr static long SLOF = 11700000;
@@ -366,35 +429,75 @@ guint32 TuningProperties::parse_number(const char *n, const char *s)
     return (guint32) result;
 }
 
+guint32 TuningProperties::parse_bandwidth(const char *n, const char *)
+{
+    int l;
+    double result;
+    char *end = NULL;
+
+    if (!strcmp(n, "AUTO"))
+        return G_MAXUINT32;
+    l = strlen(n);
+    if (n[l - 3] != 'M' || n[l - 2] != 'H' ||
+            (n[l - 1] != 'z' && n[l - 1] != 'Z'))
+    {
+        return G_MAXUINT32;
+    }
+    if (!strncmp(n, "1.712", 5))
+        return 1712000;
+    result = strtod(n, &end);
+    if (result == 0 && end == n)
+        return G_MAXUINT32;
+    return (guint32) (result * 1000000);
+}
+
 guint32 TuningProperties::parse_code_rate(const char *v, const char *s)
 {
-    static const struct
-    {
-        fe_code_rate_t v;
-        const char *s;
-    } code_rate_table[] =
-    {
-        { FEC_NONE, "NONE" },
-        { FEC_1_2, "1/2" },
-        { FEC_2_3, "2/3" },
-        { FEC_3_4, "3/4" },
-        { FEC_4_5, "4/5" },
-        { FEC_5_6, "5/6" },
-        { FEC_6_7, "6/7" },
-        { FEC_7_8, "7/8" },
-        { FEC_8_9, "8/9" },
-        { FEC_AUTO, "AUTO" },
-        { FEC_3_5, "3/5" },
-        { FEC_9_10, "9/10" },
-        { FEC_AUTO, NULL },
-    };
-
     for (int n = 0; code_rate_table[n].s; ++n)
     {
         if (!std::strcmp(code_rate_table[n].s, v))
             return code_rate_table[n].v;
     }
     throw report_parse_error("Invalid code rate", s);
+}
+
+guint32 TuningProperties::parse_transmission_mode(const char *fragment,
+            const char *whole)
+{
+    int n;
+
+    for (n = 0; transmission_mode_table[n].s; ++n)
+    {
+        if (!std::strcmp(transmission_mode_table[n].s, fragment))
+            return transmission_mode_table[n].v;
+    }
+    throw report_parse_error("Invalid transmission mode", whole);
+}
+
+guint32 TuningProperties::parse_guard_interval(const char *fragment,
+            const char *whole)
+{
+    int n;
+
+    for (n = 0; guard_interval_table[n].s; ++n)
+    {
+        if (!std::strcmp(guard_interval_table[n].s, fragment))
+            return guard_interval_table[n].v;
+    }
+    throw report_parse_error("Invalid guard_interval", whole);
+}
+
+guint32 TuningProperties::parse_hierarchy(const char *fragment,
+            const char *whole)
+{
+    int n;
+
+    for (n = 0; hierarchy_table[n].s; ++n)
+    {
+        if (!std::strcmp(hierarchy_table[n].s, fragment))
+            return hierarchy_table[n].v;
+    }
+    throw report_parse_error("Invalid hierarchy", whole);
 }
 
 guint32 TuningProperties::parse_roll_off(const char *v, const char *s)
@@ -411,28 +514,6 @@ guint32 TuningProperties::parse_roll_off(const char *v, const char *s)
 
 guint32 TuningProperties::parse_modulation(const char *v, const char *s)
 {
-    static struct
-    {
-        fe_modulation_t v;
-        const char *s;
-    } modulation_table[] =
-    {
-        { QPSK, "QPSK" },
-        { QAM_16, "QAM16" },
-        { QAM_32, "QAM32" },
-        { QAM_64, "QAM64" },
-        { QAM_128, "QAM128" },
-        { QAM_256, "QAM256" },
-        { QAM_AUTO, "AUTO" },
-        { VSB_8, "8VSB" },
-        { VSB_16, "16VSB" },
-        { PSK_8, "8PSK" },
-        { APSK_16, "APSK16" },
-        { APSK_32, "APSK32" },
-        { DQPSK, "DQPSK" },
-        { QAM_AUTO, NULL },
-    };
-
     int n;
 
     for (n = 0; modulation_table[n].s; ++n)
