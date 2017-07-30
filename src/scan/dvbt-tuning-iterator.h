@@ -34,12 +34,11 @@ public:
      * Defaults are for UK (Freeview).
      * @first_f:    First frequency.
      * @last_f:     Last frequency.
-     * FIXME: last_f should be 67, not 37 (shortcut for testing)
      * @step:       Gap between frequencies.
      * @bandwidth:  Bandwidth (default is same as step).
      */
     DvbtTuningIterator(guint32 first_f = (21 * 8 + 306) * 1000000,
-            guint32 last_f = (37 * 8 + 306) * 1000000, guint32 step = 8000000,
+            guint32 last_f = (67 * 8 + 306) * 1000000, guint32 step = 8000000,
             guint32 bandwidth = 0);
 
     // Default copy/move are OK
