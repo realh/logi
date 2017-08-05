@@ -17,5 +17,10 @@ if (ENABLE_TESTS)
     target_compile_options(fvscan PUBLIC ${GUDEV_CFLAGS} ${SQLITE_CFLAGS})
     target_link_libraries(fvscan logiscan logidb logiudev logicore
         ${GUDEV_LIBRARIES} ${SQLITE_LIBRARIES} -lpthread -lm)
+
+    add_executable(fsscan fsscan.cpp)
+    target_compile_options(fsscan PUBLIC ${GUDEV_CFLAGS} ${SQLITE_CFLAGS})
+    target_link_libraries(fsscan logiscan logidb logiudev logicore
+        ${GUDEV_LIBRARIES} ${SQLITE_LIBRARIES} -lpthread -lm)
 endif (ENABLE_TESTS)
 
