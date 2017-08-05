@@ -17,7 +17,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <algorithm>
 #include <cstring>
 
 #include <glib.h>
@@ -86,7 +85,7 @@ void StandardChannelScanner::cancel()
     }
 }
 
-StandardChannelScanner::NetworkData *
+NetworkData *
 StandardChannelScanner::get_network_data(std::uint16_t network_id)
 {
     auto ndi = networks_.find(network_id);
@@ -164,7 +163,7 @@ void StandardChannelScanner::other_sdt_filter_cb(int reason,
 TableTracker::Result StandardChannelScanner::sdt_filter_cb(int reason,
         std::shared_ptr<SDTSection> section,
         std::unique_ptr<SDTProcessor> &sdt_proc,
-        sdt_filter_ptr &sdt_filter,
+        SDTFilterPtr &sdt_filter,
         TableTracker::Result &sdt_status,
         const char *label)
 {
@@ -219,11 +218,7 @@ std::unique_ptr<SDTProcessor> StandardChannelScanner::new_sdt_processor()
 
 bool StandardChannelScanner::any_complete() const
 {
-    return std::any_of(networks_.begin(), networks_.end(),
-            [](ConstNwPair &n)->bool
-    {
-        return n.second->nit_complete;
-    });
+    return NetworkData::any_complete(networks_);
 }
 
 bool StandardChannelScanner::filter_trackers_complete() const

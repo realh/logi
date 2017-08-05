@@ -24,6 +24,7 @@
 
 #include "channel-scanner.h"
 #include "nit-processor.h"
+#include "scan-data.h"
 #include "sdt-processor.h"
 #include "section-filter.h"
 
@@ -36,32 +37,15 @@ namespace logi
  */
 class StandardChannelScanner : public ChannelScanner
 {
-private:
-    using nit_filter_ptr =
-        std::unique_ptr<SectionFilter<NITSection, StandardChannelScanner> >;
-    nit_filter_ptr nit_filter_;
-    using sdt_filter_ptr =
-        std::unique_ptr<SectionFilter<SDTSection, StandardChannelScanner> >;
-    sdt_filter_ptr this_sdt_filter_, other_sdt_filter_;
+protected:
+    using NITFilterPtr = NITFilterPtr<StandardChannelScanner>;
+    using SDTFilterPtr = SDTFilterPtr<StandardChannelScanner>;
+
+    NITFilterPtr nit_filter_;
+    SDTFilterPtr this_sdt_filter_, other_sdt_filter_;
     TableTracker::Result nit_status_, this_sdt_status_, other_sdt_status_;
 
-    struct NetworkData
-    {
-        std::unique_ptr<NITProcessor> nit_proc;
-        bool nit_complete;
-        NetworkData(std::unique_ptr<NITProcessor> &&np) :
-            nit_proc(std::move(np)), nit_complete(false)
-        {}
-    };
-    // In practice we're unlikely to see more than a couple of networks, so
-    // a map is a horrible waste of CPU cycles etc, but it is scalable and 
-    // makes my code much simpler. Or it would if std::pair wasn't incompatible
-    // with itself, making large parts of std::map unusable.
-    using NwMap = std::map<std::uint16_t, std::unique_ptr<NetworkData> >;
-    using NwPair = std::pair<std::uint16_t, std::unique_ptr<NetworkData> >;
-    using ConstNwPair = const std::pair<const std::uint16_t,
-          std::unique_ptr<NetworkData> >;
-    NwMap networks_;
+    NetworkData::MapT networks_;
 
     std::unique_ptr<SDTProcessor> this_sdt_proc_, other_sdt_proc_;
 
@@ -85,7 +69,7 @@ protected:
     virtual std::unique_ptr<NITProcessor> new_nit_processor();
 
     virtual std::unique_ptr<SDTProcessor> new_sdt_processor();
-private:
+
     NetworkData *get_network_data(std::uint16_t network_id);
 
     void nit_filter_cb(int reason, std::shared_ptr<NITSection> section);
@@ -97,7 +81,7 @@ private:
     TableTracker::Result
     sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section,
             std::unique_ptr<SDTProcessor> &sdt_proc,
-            sdt_filter_ptr &sdt_filter,
+            SDTFilterPtr &sdt_filter,
             TableTracker::Result &sdt_status,
             const char *label);
 

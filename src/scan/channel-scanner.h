@@ -22,6 +22,9 @@
 #include <memory>
 
 #include "frontend.h"
+#include "si/nit-section.h"
+#include "si/sdt-section.h"
+#include "section-filter.h"
 
 namespace logi
 {
@@ -36,6 +39,11 @@ class MultiScanner;
 class ChannelScanner
 {
 protected:
+    template<class T>
+    using NITFilterPtr = std::unique_ptr<SectionFilter<NITSection, T>>;
+    template<class T>
+    using SDTFilterPtr = std::unique_ptr<SectionFilter<SDTSection, T>>;
+
     MultiScanner *multi_scanner_;
     std::shared_ptr<Frontend> frontend_;
 public:

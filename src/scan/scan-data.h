@@ -19,13 +19,38 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <algorithm>
 #include <memory>
 #include <set>
 
+#include "nit-processor.h"
 #include "tuning.h"
 
 namespace logi
 {
+
+class NetworkData
+{
+public:
+    using MapT = std::map<std::uint16_t, std::unique_ptr<NetworkData>>;
+    using PairT = std::pair<std::uint16_t, const std::unique_ptr<NetworkData>&>;
+
+    std::unique_ptr<NITProcessor> nit_proc;
+    bool nit_complete;
+
+    NetworkData(std::unique_ptr<NITProcessor> &&np) :
+        nit_proc(std::move(np)), nit_complete(false)
+    {}
+
+    static bool any_complete(const MapT &nw_map)
+    {
+        return std::any_of(nw_map.begin(), nw_map.end(),
+                [](const NetworkData::PairT &n)->bool
+        {
+            return n.second->nit_complete;
+        });
+    }
+};
 
 class NetworkNameData
 {

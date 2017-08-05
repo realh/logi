@@ -62,6 +62,8 @@ class FreeviewChannelScanner: public StandardChannelScanner
 public:
     FreeviewChannelScanner(): StandardChannelScanner()
     {}
+
+    void start(MultiScanner *multi_scanner) override;
 protected:
     virtual std::unique_ptr<NITProcessor> new_nit_processor() override;
 };
