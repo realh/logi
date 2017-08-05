@@ -29,6 +29,19 @@ namespace logi
 
 class Section : public SectionData
 {
+public:
+    constexpr static std::uint16_t PAT_PID = 0x00;
+    constexpr static std::uint16_t NIT_PID = 0x10;
+    constexpr static std::uint16_t SDT_PID = 0x11;
+    constexpr static std::uint16_t BAT_PID = 0x11;
+
+    constexpr static std::uint8_t PAT_TABLE = 0x00;
+    constexpr static std::uint8_t PMT_TABLE = 0x01;
+    constexpr static std::uint8_t NIT_TABLE = 0x40;
+    constexpr static std::uint8_t OTHER_NIT_TABLE = 0x41;
+    constexpr static std::uint8_t SDT_TABLE = 0x42;
+    constexpr static std::uint8_t OTHER_SDT_TABLE = 0x46;
+    constexpr static std::uint8_t BAT_TABLE = 0x4A;
 protected:
     std::vector<std::uint8_t> sec_;
 public:

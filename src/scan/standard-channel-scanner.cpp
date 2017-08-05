@@ -53,17 +53,17 @@ void StandardChannelScanner::start(MultiScanner *multi_scanner)
     nit_filter_.reset(new SectionFilter<NITSection, StandardChannelScanner>(
             multi_scanner->get_receiver(), *this,
             &StandardChannelScanner::nit_filter_cb,
-            NIT_PID, 0x40, 0, 5000, 0xff, 0));
+            Section::NIT_PID, Section::NIT_TABLE, 0, 5000, 0xff, 0));
     this_sdt_filter_.reset
         (new SectionFilter<SDTSection, StandardChannelScanner>(
             multi_scanner->get_receiver(), *this,
             &StandardChannelScanner::this_sdt_filter_cb,
-            SDT_PID, 0x42, 0, 5000, 0xff, 0));
+            Section::SDT_PID, Section::SDT_TABLE, 0, 5000, 0xff, 0));
     other_sdt_filter_.reset
         (new SectionFilter<SDTSection, StandardChannelScanner>(
             multi_scanner->get_receiver(), *this,
             &StandardChannelScanner::other_sdt_filter_cb,
-            SDT_PID, 0x46, 0, 5000, 0xff, 0));
+            Section::SDT_PID, Section::OTHER_SDT_TABLE, 0, 5000, 0xff, 0));
 }
 
 void StandardChannelScanner::cancel()

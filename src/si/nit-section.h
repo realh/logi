@@ -25,8 +25,6 @@
 namespace logi
 {
 
-constexpr std::uint16_t NIT_PID = 0x10;
-
 class TSSectionData;
 
 class NITSection : public Section

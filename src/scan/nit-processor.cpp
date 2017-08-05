@@ -134,6 +134,8 @@ void NITProcessor::process_descriptor(const Descriptor &desc)
             if (!network_name_.size())
             {
                 network_name_ = NetworkNameDescriptor(desc).get_network_name();
+                g_print("Discovered network %d %s",
+                        current_nw_id_, network_name_.c_str());
                 mscanner_->process_network_name(current_nw_id_, network_name_);
             }
             break;
