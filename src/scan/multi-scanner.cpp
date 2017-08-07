@@ -25,6 +25,7 @@
 #include "si/network-name-descriptor.h"
 #include "si/service-descriptor.h"
 #include "si/service-list-descriptor.h"
+#include "si/sat-delsys-descriptor.h"
 #include "si/terr-delsys-descriptor.h"
 
 namespace logi
@@ -222,13 +223,21 @@ void MultiScanner::process_service_list_descriptor(std::uint16_t orig_nw_id,
 void MultiScanner::process_delivery_system_descriptor(std::uint16_t nw_id,
         std::uint16_t orig_nw_id, std::uint16_t ts_id, const Descriptor &desc)
 {
-    // FIXME: Also need to support satellite later
-    TerrestrialDeliverySystemDescriptor d(desc);
+    TuningProperties *tuning = nullptr;
+    if (desc.tag() == Descriptor::TERRESTRIAL_DELIVERY_SYSTEM)
+    {
+        TerrestrialDeliverySystemDescriptor d(desc);
+        tuning = d.get_tuning_properties();
+    }
+    else if (desc.tag() == Descriptor::SATELLITE_DELIVERY_SYSTEM)
+    {
+        SatelliteDeliverySystemDescriptor d(desc);
+        tuning = d.get_tuning_properties();
+    }
     auto &tsdat = get_transport_stream_data(orig_nw_id, ts_id);
     tsdat.set_network_id(nw_id);
-    auto tuning = d.get_tuning_properties();
     if (!tsdat.get_tuning())
-        g_debug("  New TS %d: %s", ts_id, tuning->describe().c_str());
+        g_print("  New TS %d: %s\n", ts_id, tuning->describe().c_str());
     else
         g_debug("  Known TS %d: %s", ts_id, tuning->describe().c_str());
     tsdat.set_tuning(tuning);
@@ -349,7 +358,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
             }
             for (const auto &s: ts.get_service_ids())
             {
-                g_print("  service %d onw %d nw %d\n", s,
+                g_debug("  service %d onw %d nw %d", s,
                         ts.get_original_network_id(), ts.get_network_id());
                 trans_serv_v.emplace_back(ts.get_original_network_id(),
                         ts.get_network_id(), ts.get_transport_stream_id(),
