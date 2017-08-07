@@ -33,7 +33,7 @@
 namespace logi
 {
 
-class ChannelScanner;
+class SingleChannelScanner;
 
 /**
  * MultiScanner:
@@ -50,7 +50,7 @@ public:
     };
 private:
     std::shared_ptr<Receiver> rcv_;
-    std::shared_ptr<ChannelScanner> channel_scanner_;
+    std::shared_ptr<SingleChannelScanner> channel_scanner_;
     std::shared_ptr<TuningIterator> iter_;
     Status status_;
     sigc::signal<void, MultiScanner &, Status> finished_signal_;
@@ -67,7 +67,7 @@ private:
     std::set<std::uint32_t> scanned_equivalences_;
 public:
     MultiScanner(std::shared_ptr<Receiver> rcv,
-            std::shared_ptr<ChannelScanner> channel_scanner,
+            std::shared_ptr<SingleChannelScanner> channel_scanner,
             std::shared_ptr<TuningIterator> iter);
 
     ~MultiScanner()
@@ -133,12 +133,11 @@ public:
     /// Database::PseudoQuery.
     void commit_to_database(Database &db, const char *source);
 
-    friend ChannelScanner;
-private:
     /**
      * Called by ChannelScanner when it's completed scanning a channel.
      */
     void channel_finished(bool success);
+private:
 
     void next();
 

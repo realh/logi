@@ -230,7 +230,7 @@ std::string TuningProperties::describe() const
 
     if (t == SYS_DVBS)
     {
-        s = g_strdup_printf("%fMHz %c", std::floor((float) f / (float) d),
+        s = g_strdup_printf("%dMHz %c", int((float) f / (float) d),
                 v == SEC_VOLTAGE_13 ? 'V' : 'H');
     }
     else if (t == SYS_DVBT)

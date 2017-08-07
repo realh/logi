@@ -32,10 +32,9 @@ static void timeout_cb(MLPtr main_loop)
     main_loop->quit();
 }
 
-static void lock_cb(MLPtr main_loop)
+static void lock_cb(MLPtr)
 {
     g_print("Locked\n");
-    main_loop->quit();
 }
 
 int main(int argc, char **argv)

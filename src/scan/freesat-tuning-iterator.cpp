@@ -36,4 +36,10 @@ void FreesatTuningIterator::reset()
     iter_ = 0;
 }
 
+char const *FreesatTuningIterator::presets_[] =
+{
+    "S1 11307000 V 27500000 2/3 35 QPSK",
+    nullptr
+};
+
 }

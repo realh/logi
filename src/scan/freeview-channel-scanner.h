@@ -19,7 +19,7 @@
 */
 
 #include "nit-processor.h"
-#include "standard-channel-scanner.h"
+#include "single-channel-scanner.h"
 
 namespace logi
 {
@@ -57,13 +57,8 @@ protected:
     virtual void process_descriptor(const Descriptor &desc);
 };
 
-class FreeviewChannelScanner: public StandardChannelScanner
+class FreeviewChannelScanner: public SingleChannelScanner
 {
-public:
-    FreeviewChannelScanner(): StandardChannelScanner()
-    {}
-
-    void start(MultiScanner *multi_scanner) override;
 protected:
     virtual std::unique_ptr<NITProcessor> new_nit_processor() override;
 };

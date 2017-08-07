@@ -127,7 +127,7 @@ int main()
     database->queue_statement(database->get_insert_source_statement(), vp);
 
     MultiScanner scanner { rcv,
-        std::shared_ptr<ChannelScanner> { new FreesatChannelScanner() },
+        std::shared_ptr<SingleChannelScanner> { new FreesatChannelScanner() },
         std::shared_ptr<FreesatTuningIterator>
             { new FreesatTuningIterator() } };
 

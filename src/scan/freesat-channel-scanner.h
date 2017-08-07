@@ -22,65 +22,23 @@
 #include <map>
 #include <memory>
 
-#include "channel-scanner.h"
-#include "nit-processor.h"
-#include "scan-data.h"
-#include "sdt-processor.h"
-#include "section-filter.h"
+#include "single-channel-scanner.h"
 
 namespace logi
 {
 
 /**
  * FreesatChannelScanner:
- * Scans BAT, NIT and SDT.
+ * Scans BAT, BAT and SDT.
  */
-class FreesatChannelScanner : public ChannelScanner
+class FreesatChannelScanner : public SingleChannelScanner
 {
 private:
-    constexpr static std::uint16_t FS_NIT_PID = 3840;
     constexpr static std::uint16_t FS_BAT_PID = 3841;
     constexpr static std::uint16_t FS_SDT_PID = 3841;
-
-    using NITFilterPtr = NITFilterPtr<FreesatChannelScanner>;
-    using SDTFilterPtr = SDTFilterPtr<FreesatChannelScanner>;
-
-    NITFilterPtr nit_filter_;
-    SDTFilterPtr sdt_filter_;
-    TableTracker::Result nit_status_, sdt_status_;
-
-    NetworkData::MapT networks_;
-
-    std::unique_ptr<SDTProcessor> sdt_proc_;
-public:
-    FreesatChannelScanner() : ChannelScanner()
-    {}
-
-    void start(MultiScanner *multi_scanner) override;
-
-    /**
-     * @cancel:
-     * Cancel the current scan, either to interrupt it, or when current channel
-     * is finished with.
-     */
-    void cancel() override;
-private:
-    /**
-     * Can be overridden to specialise the NITProcessor eg for Freeview LCNs.
-     */
-    virtual std::unique_ptr<NITProcessor> new_nit_processor();
-
-    virtual std::unique_ptr<SDTProcessor> new_sdt_processor();
-
-    NetworkData *get_network_data(std::uint16_t network_id);
-
-    void nit_filter_cb(int reason, std::shared_ptr<NITSection> section);
-
-    void sdt_filter_cb(int reason, std::shared_ptr<SDTSection> section);
-
-    bool any_complete() const;
-
-    bool filter_trackers_complete() const;
+protected:
+    virtual bool get_filter_params(std::uint16_t &pid, std::uint8_t &table_id)
+        override;
 };
 
 }

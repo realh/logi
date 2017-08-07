@@ -19,7 +19,7 @@
 
 #include <algorithm>
 
-#include "channel-scanner.h"
+#include "single-channel-scanner.h"
 #include "multi-scanner.h"
 
 #include "si/network-name-descriptor.h"
@@ -31,7 +31,7 @@ namespace logi
 {
 
 MultiScanner::MultiScanner(std::shared_ptr<Receiver> rcv,
-        std::shared_ptr<ChannelScanner> channel_scanner,
+        std::shared_ptr<SingleChannelScanner> channel_scanner,
         std::shared_ptr<TuningIterator> iter)
     : rcv_{rcv}, channel_scanner_{channel_scanner}, iter_{iter},
     status_{BLANK}, finished_{false}

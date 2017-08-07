@@ -127,7 +127,7 @@ int main()
     database->queue_statement(database->get_insert_source_statement(), vp);
 
     MultiScanner scanner { rcv,
-        std::shared_ptr<ChannelScanner> { new FreeviewChannelScanner() },
+        std::shared_ptr<SingleChannelScanner> { new FreeviewChannelScanner() },
         std::shared_ptr<DvbtTuningIterator> { new DvbtTuningIterator() } };
 
     main_loop = Glib::MainLoop::create();

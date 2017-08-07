@@ -37,14 +37,7 @@ public:
 private:
     unsigned iter_;
 
-    constexpr static char const *presets_[] = {
-       "S2 11023250 H 23000000 2/3 25 8PSK",
-       "S1 11390330 V 27500000 2/3 35 QPSK",
-       "S1 11307000 V 27500000 2/3 35 QPSK",
-       "S1 11344500 H 27500000 2/3 35 QPSK",
-       "S1 11223670 V 27500000 2/3 35 QPSK",
-       nullptr
-    };
+    static char const *presets_[];
 };
 
 }
