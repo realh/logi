@@ -70,19 +70,6 @@ TerrestrialDeliverySystemDescriptor::get_tuning_properties() const
         { DTV_GUARD_INTERVAL, guard_interval() },
         { DTV_TRANSMISSION_MODE, transmission_mode() },
     });
-    /*
-    return new TuningProperties({
-        { DTV_DELIVERY_SYSTEM, SYS_DVBT },
-        { DTV_FREQUENCY, centre_frequency()},
-        { DTV_BANDWIDTH_HZ, bandwidth() },
-        { DTV_MODULATION, QAM_AUTO },
-        { DTV_HIERARCHY, HIERARCHY_AUTO },
-        { DTV_CODE_RATE_HP, FEC_AUTO },
-        { DTV_CODE_RATE_LP, FEC_AUTO },
-        { DTV_GUARD_INTERVAL, GUARD_INTERVAL_AUTO },
-        { DTV_TRANSMISSION_MODE, TRANSMISSION_MODE_AUTO }
-    });
-    */
 }
 
 }
