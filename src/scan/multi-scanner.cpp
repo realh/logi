@@ -287,17 +287,15 @@ bool MultiScanner::check_harvest()
             g_print("%d ", s.first);
     }
     g_print("\n");
-    */
     return std::all_of(ts_data_.begin(), ts_data_.end(),
         [](const std::pair<std::uint16_t, const TransportStreamData &> &ts)
         {
             return ts.second.get_scan_status() != TransportStreamData::PENDING;
         });
-    /*
-    && std::all_of(service_data_.begin(), service_data_.end(),
+    */
+    return std::all_of(service_data_.begin(), service_data_.end(),
         [](const std::pair<std::uint16_t, const ServiceData &> &s)
         { return s.second.get_scanned(); });
-    */
 }
 
 void MultiScanner::process_network_name(std::uint16_t network_id,
