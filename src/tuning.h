@@ -113,8 +113,18 @@ public:
      */
     TuningProperties &merge(const TuningProperties &other);
 
+    /**
+     * Satellite frequencies require some weird magic to turn them into
+     * tuning properties.
+     */
+    static void sat_freq_to_props(std::uint32_t &freq, std::uint32_t &tone);
+
     using prop_map_t = std::map<std::uint32_t, std::uint32_t>;
 private:
+    constexpr static long SLOF = 11700000;
+    constexpr static long LOF1 = 9750000;
+    constexpr static long LOF2 = 10600000;
+
     // Private version doesn't update props_
     void append_prop_priv(guint32 cmd, guint32 data);
 
@@ -138,6 +148,8 @@ private:
      */
     void query_key_props(fe_delivery_system_t &t, guint32 &f,
             fe_sec_voltage_t &v, guint32 &div) const;
+
+    void sat_freq_to_props(std::uint32_t freq);
 
     void parse_dvb_s(guint n, char **tokens, const char *tuning_str);
 

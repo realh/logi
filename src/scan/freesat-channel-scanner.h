@@ -34,6 +34,7 @@ namespace logi
 class FreesatChannelScanner : public SingleChannelScanner
 {
 private:
+    constexpr static std::uint16_t FS_NIT_PID = 3840;
     constexpr static std::uint16_t FS_BAT_PID = 3841;
     constexpr static std::uint16_t FS_SDT_PID = 3841;
 protected:

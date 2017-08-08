@@ -263,6 +263,8 @@ GQuark TuningProperties::get_error_quark()
 void TuningProperties::query_key_props(fe_delivery_system_t &t, guint32 &f,
         fe_sec_voltage_t &v, guint32 &d) const
 {
+    fe_sec_tone_mode_t tone = SEC_TONE_OFF;
+
     t = SYS_UNDEFINED;
     f = 0;
     v = SEC_VOLTAGE_OFF;
@@ -294,10 +296,45 @@ void TuningProperties::query_key_props(fe_delivery_system_t &t, guint32 &f,
             case DTV_VOLTAGE:
                 v = (fe_sec_voltage_t) props_v_[n].u.data;
                 break;
+            case DTV_TONE:
+                tone = (fe_sec_tone_mode_t) props_v_[n].u.data;
+                break;
             default:
                 break;
         }
     }
+    if (t == SYS_DVBS)
+    {
+        if (tone == SEC_TONE_ON)
+            f += LOF2;
+        else
+            f += LOF1;
+        //g_print("Converted prop %d to freq %d\n", f2, f);
+    }
+}
+
+void TuningProperties::sat_freq_to_props(std::uint32_t &freq,
+        std::uint32_t &tone)
+{
+    if (freq < SLOF)
+    {
+        freq -= LOF1;
+        tone = SEC_TONE_OFF;
+    }
+    else
+    {
+        freq -= LOF2;
+        tone = SEC_TONE_ON;
+    }
+    //g_print("Converted freq %d to prop %d\n", f2, freq);
+}
+
+void TuningProperties::sat_freq_to_props(std::uint32_t freq)
+{
+    std::uint32_t tone;
+    sat_freq_to_props(freq, tone);
+    append_prop_priv(DTV_FREQUENCY, freq);
+    append_prop_priv(DTV_TONE, tone);
 }
 
 void TuningProperties::parse_dvb_t(unsigned n, char **tokens, const char *s)
@@ -361,16 +398,12 @@ void TuningProperties::parse_dvb_t(unsigned n, char **tokens, const char *s)
 
 void TuningProperties::parse_dvb_s(guint n, char **tokens, const char *s)
 {
-    constexpr static long SLOF = 11700000;
-    constexpr static long LOF1 = 9750000;
-    constexpr static long LOF2 = 10600000;
-
     if (n < 5)
     {
         throw report_parse_error("Too few parameters", s);
     }
 
-    guint32 val;
+    std::uint32_t val;
     switch (tokens[0][1])
     {
         case '2':
@@ -388,15 +421,7 @@ void TuningProperties::parse_dvb_s(guint n, char **tokens, const char *s)
     append_prop_priv(DTV_DELIVERY_SYSTEM, val);
 
     val = parse_number(tokens[1], s);
-    if (val < SLOF)
-    {
-        val -= LOF1;
-    }
-    else
-    {
-        val -= LOF2;
-    }
-    append_prop_priv(DTV_FREQUENCY, val);
+    sat_freq_to_props(val);
 
     if (tokens[2][0] == 'H' || tokens[2][0] == 'L')
         val = SEC_VOLTAGE_18;

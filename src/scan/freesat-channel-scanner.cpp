@@ -34,8 +34,8 @@ bool FreesatChannelScanner::get_filter_params(std::uint16_t &pid,
     switch (table_id)
     {
         case Section::NIT_TABLE:
-            pid = FS_BAT_PID;
-            table_id = Section::BAT_TABLE;
+            pid = FS_NIT_PID;
+            table_id = Section::OTHER_NIT_TABLE;
             break;
         case Section::SDT_TABLE:
             return false;

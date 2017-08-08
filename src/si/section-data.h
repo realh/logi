@@ -98,7 +98,7 @@ public:
 
     std::uint8_t bcd8(unsigned o) const
     {
-        return (word8(o) & 0xff) * 10 + (word8(o) & 0xf);
+        return ((word8(o) & 0xf0) >> 4) * 10 + (word8(o) & 0xf);
     }
 
     std::uint32_t bcd_time(unsigned o) const

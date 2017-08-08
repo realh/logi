@@ -38,7 +38,15 @@ void FreesatTuningIterator::reset()
 
 char const *FreesatTuningIterator::presets_[] =
 {
+    "S2 11023250 H 23000000 2/3 25 8PSK",
+    "S2 10935500 V 23000000 8/9 25 QPSK",
+    "S2 10847000 V 23000000 2/3 25 8PSK",
     "S1 11307000 V 27500000 2/3 35 QPSK",
+    "S1 11344500 H 27500000 2/3 35 QPSK",
+    "S1 11223670 V 27500000 2/3 35 QPSK",
+    "S1 11222170 H 27500000 2/3 35 QPSK",
+    "S1 11426330 V 27500000 2/3 35 QPSK",
+    "S1 11343000 V 27500000 2/3 35 QPSK",
     nullptr
 };
 

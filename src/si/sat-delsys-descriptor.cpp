@@ -40,9 +40,14 @@ fe_modulation_t SatelliteDeliverySystemDescriptor::modulation_type() const
 TuningProperties *
 SatelliteDeliverySystemDescriptor::get_tuning_properties() const
 {
+    std::uint32_t freq, tone;
+    freq = frequency();
+    TuningProperties::sat_freq_to_props(freq, tone);
+
     return new TuningProperties({
         { DTV_DELIVERY_SYSTEM, modulation_system() ? SYS_DVBS2 : SYS_DVBS },
-        { DTV_FREQUENCY, frequency() },
+        { DTV_FREQUENCY, freq },
+        { DTV_TONE, tone },
         { DTV_VOLTAGE,
             (int(polarization()) & 1) ? SEC_VOLTAGE_13 : SEC_VOLTAGE_13 },
         { DTV_ROLLOFF, roll_off() },
