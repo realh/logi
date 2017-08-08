@@ -67,6 +67,9 @@ void MultiScanner::cancel()
 
 void MultiScanner::channel_finished(bool success)
 {
+    if (success)
+        ++successful_scans_;
+
     if (current_ts_data_)
     {
         current_ts_data_->set_scan_status(success ?
@@ -203,21 +206,25 @@ void MultiScanner::process_service_list_descriptor(std::uint16_t orig_nw_id,
         std::uint16_t nw_id, std::uint16_t ts_id, const Descriptor &desc)
 {
     ServiceListDescriptor sd(desc);
-    /*
-    g_print("Services on ts %d:\n", ts_id);
-    for (const auto &s: sd.get_services())
-    {
-        g_print("%d ", s.service_id());
-    }
-    g_print("\n");
-    */
+
     auto &tsdat = get_transport_stream_data(orig_nw_id, ts_id);
     tsdat.set_network_id(nw_id);
     const auto &svcs = sd.get_services();
     for (const auto &s: svcs)
     {
         tsdat.add_service_id(s.service_id());
+        auto &sdat = get_service_data(orig_nw_id, s.service_id());
+        sdat.set_ts_id(ts_id);
     }
+
+    /*
+    g_print("Services on ts %d:\n", ts_id);
+    for (const auto &s: svcs)
+    {
+        g_print("%d ", s.service_id());
+    }
+    g_print("\n");
+    */
 }
 
 void MultiScanner::process_delivery_system_descriptor(std::uint16_t nw_id,
@@ -268,34 +275,38 @@ void MultiScanner::set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
 
 bool MultiScanner::check_harvest()
 {
-    if (!ts_data_.size() || !service_data_.size())
+    /* Each TS in Freesat carries data for all other streams but not itself,
+     * so we need to scan 2 of them to get a complete dataset.
+     */
+    if (!ts_data_.size() || !service_data_.size() || successful_scans_ < 2)
         return false;
+
     /*
     g_print("Outstanding transports:\n");
     for (const auto &ts: ts_data_)
     {
         if (ts.second.get_scan_status() == TransportStreamData::PENDING)
-            g_print("%ld ", ts.first);
+            g_print("%d ", ts.second.get_transport_stream_id());
     }
     g_print("\n");
-    */
-    /*
     g_print("Outstanding services:\n");
     for (const auto &s: service_data_)
     {
         if (!s.second.get_scanned())
-            g_print("%d ", s.first);
+            g_print("%d:%d ", s.first & 0xffff, s.second.get_ts_id());
     }
     g_print("\n");
+    */
     return std::all_of(ts_data_.begin(), ts_data_.end(),
         [](const std::pair<std::uint16_t, const TransportStreamData &> &ts)
         {
             return ts.second.get_scan_status() != TransportStreamData::PENDING;
         });
-    */
+    /*
     return std::all_of(service_data_.begin(), service_data_.end(),
         [](const std::pair<std::uint16_t, const ServiceData &> &s)
         { return s.second.get_scanned(); });
+    */
 }
 
 void MultiScanner::process_network_name(std::uint16_t network_id,

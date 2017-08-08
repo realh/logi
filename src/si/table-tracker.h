@@ -19,6 +19,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <map>
+#include <utility>
 #include <vector>
 
 namespace logi
@@ -33,9 +35,15 @@ class Section;
 class TableTracker
 {
 private:
-    std::vector<bool> table_;
+    struct TableInfo
+    {
+        TableInfo() : version_number(-1), all_complete(false) {}
+        std::int8_t version_number;
+        bool all_complete;
+        std::vector<bool> completeness;
+    };
+    std::map<std::uint16_t, TableInfo> tables_;
     bool complete_;
-    int version_number_;
 public:
     enum Result
     {
@@ -45,10 +53,11 @@ public:
         REPEAT,             /// Already have this section.
         REPEAT_COMPLETE,    /// Table was already complete.
         OLD_VERSION,        /// This section's version number is obsolete.
+        NEXT,               /// Section isn't applicable yet.
         ERROR,
     };
 
-    TableTracker() : version_number_(-1) {}
+    TableTracker() = default;
 
     TableTracker(const TableTracker &) = delete;
     TableTracker(TableTracker &&) = delete;
@@ -60,6 +69,8 @@ public:
     Result track(const Section &sec);
 
     bool complete() const { return complete_; }
+private:
+    Result track_for_id(const Section &sec);
 };
 
 }

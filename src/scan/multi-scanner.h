@@ -37,7 +37,7 @@ class SingleChannelScanner;
 
 /**
  * MultiScanner:
- * Manages a scan of a whole set of frequencies for a network/bouqet.
+ * Manages a scan of a whole set of frequencies for a provider.
  */
 class MultiScanner
 {
@@ -49,6 +49,7 @@ public:
         COMPLETE    /// All data has been collected.
     };
 private:
+    int successful_scans_ = 0;
     std::shared_ptr<Receiver> rcv_;
     std::shared_ptr<SingleChannelScanner> channel_scanner_;
     std::shared_ptr<TuningIterator> iter_;
@@ -60,7 +61,10 @@ private:
     std::map<std::uint16_t, NetworkNameData> nw_data_;
     std::map<std::uint32_t, TransportStreamData> ts_data_;
     TransportStreamData *current_ts_data_;
+
+    // Key is (original_network_id << 16) | service_id
     std::map<std::uint32_t, ServiceData> service_data_;
+
     // Key is (network_id << 16) | service_id
     std::map<std::uint32_t, std::uint16_t> lcn_data_;
     // Used to avoid trying to scan the same channel more than once
@@ -138,7 +142,6 @@ public:
      */
     void channel_finished(bool success);
 private:
-
     void next();
 
     void lock_cb();

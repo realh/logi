@@ -29,56 +29,73 @@ namespace logi
 
 void TableTracker::reset()
 {
-    table_.clear();
+    tables_.clear();
     complete_ = false;
-    version_number_ = -1;
 }
 
 TableTracker::Result TableTracker::track(const Section &sec)
 {
+    auto result = track_for_id(sec);
+    if (result == REPEAT_COMPLETE)
+    {
+        if (!std::all_of(tables_.begin(), tables_.end(),
+            [](const std::pair<std::uint16_t, TableInfo> &p)
+            {
+                return p.second.all_complete;
+            }))
+        {
+            return REPEAT;
+        }
+    }
+    return result;
+}
 
+TableTracker::Result TableTracker::track_for_id(const Section &sec)
+{
+    if (!sec.current_next_indicator())
+        return NEXT;
     int vn = sec.version_number();
+    auto &tab = tables_[sec.section_id()];
 
-    if (version_number_ == -1)
+    if (tab.version_number == -1)
     {
-        //g_print("Starting with version number %d\n", vn);
-        version_number_ = vn;
+        // This is the first section with the given id
+        tab.version_number = vn;
     }
-    else if (vn > version_number_ || (vn < 64 && version_number_ >= 400))
+    else if (vn > tab.version_number || (vn < 12 && tab.version_number >= 24))
     {
-        //g_print("New table version %d replaces %d\n", vn, version_number_);
+        // New version
         reset();
-        version_number_ = vn;
+        tab.version_number = vn;
     }
-    else if (vn != version_number_)
+    else if (vn != tab.version_number)
     {
-        //g_print("Old version %d, expecting %d\n", vn, version_number_);
         return OLD_VERSION;
     }
 
     auto l = sec.last_section_number() + 1u;
-    if (l > table_.size())
-        complete_ = false;
-    if (l != table_.size())
-        table_.resize(l);
+    if (l > tab.completeness.size())
+        tab.all_complete = false;
+    if (l != tab.completeness.size())
+        tab.completeness.resize(l);
 
     // If already complete before adding this section this must be a repeat
-    if (complete_)
+    if (tab.all_complete)
         return REPEAT_COMPLETE;
 
     Result result;
 
-    if (table_[sec.section_number()])
+    if (tab.completeness[sec.section_number()])
     {
         result = REPEAT;
     }
     else
     {
         result = OK;
-        table_[sec.section_number()] = true;
+        tab.completeness[sec.section_number()] = true;
     }
 
-    complete_ = std::all_of(table_.begin(), table_.end(),
+    complete_ = std::all_of(tab.completeness.begin(), tab.completeness.end(),
             [](bool t)->bool { return t; });
 
     return complete_ ? COMPLETE : result;
