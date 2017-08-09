@@ -27,6 +27,14 @@
 namespace logi
 {
 
+class FreesatBATProcessor: public NITProcessor
+{
+public:
+    constexpr static std::uint8_t LCN_DESCRIPTOR_TAG = 0x83;
+protected:
+    virtual void process_descriptor(const Descriptor &desc);
+};
+
 /**
  * FreesatChannelScanner:
  * Scans BAT, BAT and SDT.
@@ -37,9 +45,29 @@ private:
     constexpr static std::uint16_t FS_NIT_PID = 3840;
     constexpr static std::uint16_t FS_BAT_PID = 3841;
     constexpr static std::uint16_t FS_SDT_PID = 3841;
+
+    using BATFilterPtr = 
+        std::unique_ptr<SectionFilter<NITSection, FreesatChannelScanner>>;
+    BATFilterPtr bat_filter_;
+    TableTracker::Result bat_status_;
+    BouquetData::MapT bouquets_;
+public:
+    virtual void start(MultiScanner *multi_scanner) override;
+
+    virtual void cancel() override;
+
+    virtual bool is_complete() const override;
 protected:
     virtual bool get_filter_params(std::uint16_t &pid, std::uint8_t &table_id)
         override;
+
+    virtual bool filter_trackers_complete() const override;
+private:
+    BouquetData *get_bouquet_data(std::uint16_t bouquet_id);
+
+    std::unique_ptr<NITProcessor> new_bat_processor();
+
+    void bat_filter_cb(int reason, std::shared_ptr<NITSection> section);
 };
 
 }

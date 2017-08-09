@@ -52,6 +52,8 @@ public:
     }
 };
 
+using BouquetData = NetworkData;
+
 class NetworkNameData
 {
 public:
@@ -68,11 +70,17 @@ public:
 
     std::uint16_t get_network_id() const { return network_id_; }
 
+    std::uint16_t get_bouquet_id() const { return network_id_; }
+
     const Glib::ustring &get_network_name() const { return network_name_; }
+
+    const Glib::ustring &get_bouquet_name() const { return network_name_; }
 private:
     std::uint16_t network_id_;
     Glib::ustring network_name_;
 };
+
+using BouquetNameData = NetworkNameData;
 
 class TransportStreamData
 {

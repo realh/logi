@@ -101,7 +101,7 @@ protected:
 
     bool any_complete() const;
 
-    bool filter_trackers_complete() const;
+    virtual bool filter_trackers_complete() const;
 
     virtual void finished(bool success = true);
 };

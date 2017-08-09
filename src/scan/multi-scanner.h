@@ -58,6 +58,8 @@ private:
     sigc::connection lock_conn_, nolock_conn_;
     bool finished_;
 
+    // For Freesat nw_data_ is really bouquet data, and ts_data_ network_ids
+    // are really bouquet_ids
     std::map<std::uint16_t, NetworkNameData> nw_data_;
     std::map<std::uint32_t, TransportStreamData> ts_data_;
     TransportStreamData *current_ts_data_;

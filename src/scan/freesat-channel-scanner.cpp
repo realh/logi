@@ -46,4 +46,92 @@ bool FreesatChannelScanner::get_filter_params(std::uint16_t &pid,
     return true;
 }
 
+void FreesatChannelScanner::start(MultiScanner *multi_scanner)
+{
+    bat_status_ = TableTracker::BLANK;
+    for (auto &bd: bouquets_)
+    {
+        bd.second->nit_proc->reset_tracker();
+    }
+    bat_filter_.reset(new SectionFilter<BATSection, FreesatChannelScanner>(
+            multi_scanner->get_receiver(), *this,
+            &FreesatChannelScanner::bat_filter_cb,
+            FS_BAT_PID, Section::BAT_TABLE, 0, 5000, 0xff, 0));
+    SingleChannelScanner::start(multi_scanner);
+}
+
+void FreesatChannelScanner::cancel()
+{
+    if (bat_filter_)
+    {
+        bat_filter_->stop();
+        bat_filter_.reset();
+    }
+    SingleChannelScanner::cancel();
+}
+
+BouquetData *
+FreesatChannelScanner::get_bouquet_data(std::uint16_t bouquet_id)
+{
+    auto bdi = bouquets_.find(bouquet_id);
+    BouquetData *bd = nullptr;
+
+    if (bdi == bouquets_.end())
+    {
+        bouquets_[bouquet_id] = std::unique_ptr<BouquetData>
+                (bd = new BouquetData(new_bat_processor()));
+    }
+    else
+    {
+        bd = bdi->second.get();
+    }
+    return bd;
+}
+
+std::unique_ptr<NITProcessor> new_bat_processor()
+{
+    return std::unique_ptr<NITProcessor>(new FreesatBATProcessor());
+}
+
+bool FreesatChannelScanner::filter_trackers_complete() const
+{
+    if (bat_status_ != TableTracker::COMPLETE &&
+            bat_status_ != TableTracker::REPEAT_COMPLETE &&
+            bat_status_ != TableTracker::ERROR)
+    {
+        return false;
+    }
+    return SingleChannelScanner::filter_trackers_complete();
+}
+
+void FreesatChannelScanner::bat_filter_cb(int reason,
+        std::shared_ptr<BATSection> section)
+{
+    BouquetData *bd = section ?
+        get_network_data(section->network_id()) : nullptr;
+
+    if (reason)
+    {
+        g_critical("BAT filter error: %s\n", std::strerror(reason));
+        bat_status_ = TableTracker::ERROR;
+    }
+    else if (bd)
+    {
+        bd->nit_complete = bd->nit_proc->process(section, multi_scanner_);
+        if (bd->nit_complete)
+            bat_status_ = TableTracker::COMPLETE;
+        else if (bat_status_ == TableTracker::BLANK)
+            bat_status_ = TableTracker::OK;
+    }
+
+    if (!section || bat_status_ == TableTracker::COMPLETE
+        || bat_status_ == TableTracker::ERROR)
+    {
+        bat_filter_->stop();
+        g_debug("Testing completeness for BAT");
+        if (filter_trackers_complete())
+            finished(any_complete());
+    }
+}
+
 }
