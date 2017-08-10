@@ -30,6 +30,7 @@ public:
     constexpr static std::uint8_t NETWORK_NAME = 0x40;
     constexpr static std::uint8_t SERVICE_LIST = 0x41;
     constexpr static std::uint8_t SATELLITE_DELIVERY_SYSTEM = 0x43;
+    constexpr static std::uint8_t BOUQUET_NAME = 0x47;
     constexpr static std::uint8_t SERVICE = 0x48;
     constexpr static std::uint8_t TERRESTRIAL_DELIVERY_SYSTEM = 0x5A;
     constexpr static std::uint8_t EXTENSION = 0x7F;
