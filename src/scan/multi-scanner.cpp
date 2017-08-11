@@ -244,7 +244,7 @@ void MultiScanner::process_delivery_system_descriptor(std::uint16_t nw_id,
     auto &tsdat = get_transport_stream_data(orig_nw_id, ts_id);
     tsdat.set_network_id(nw_id);
     if (!tsdat.get_tuning())
-        g_print("  New TS %d: %s\n", ts_id, tuning->describe().c_str());
+        g_debug("  New TS %d: %s", ts_id, tuning->describe().c_str());
     else
         g_debug("  Known TS %d: %s", ts_id, tuning->describe().c_str());
     tsdat.set_tuning(tuning);
@@ -358,15 +358,18 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         std::vector<std::tuple<id_t, id_t, id_t>>               serv_prov_v;
         std::vector<std::tuple<id_t, id_t, id_t, id_t>>         nw_lcn_v;
 
-        g_debug("Committing data");
+        g_print("Committing data...\n");
 
+        g_print("Building networks vector\n");
         for (const auto &nw: nw_data_)
         {
             g_debug("  Network %s", nw.second.get_network_name().c_str());
             nw_v.emplace_back(nw.first, nw.second.get_network_name());
         }
+        g_print("Inserting networks\n");
         db.run_statement(ins_nw, nw_v);
 
+        g_print("Building transport streams vectors\n");
         for (const auto &tsp: ts_data_)
         {
             const auto &ts = tsp.second;
@@ -393,11 +396,12 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
 
             }
         }
-        db.run_statement(ins_nw, nw_v);
+        g_print("Inserting tuning data\n");
         db.run_statement(ins_tuning, tuning_v);
+        g_print("Inserting services per transport\n");
         db.run_statement(ins_trans_serv, trans_serv_v);
 
-
+        g_print("Building service vectors\n");
         for (const auto &sp: service_data_)
         {
             const auto &s = sp.second;
@@ -420,11 +424,15 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         }
         // Global provider names have to be inserted before
         // service_provider_names
+        g_print("Inserting provider names\n");
         db.run_statement(ins_prov_nm, prov_nm_v);
+        g_print("Inserting service ids\n");
         db.run_statement(ins_serv_id, serv_id_v);
+        g_print("Inserting service names\n");
         db.run_statement(ins_serv_name, serv_name_v);
         // Now read back rowids of provider names and build a vector mapping
         // service_ids to provider ids.
+        g_print("Building service_id:provider_id vector\n");
         for (const auto &sp: service_data_)
         {
             const auto &s = sp.second;
@@ -436,14 +444,17 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
                         s.get_service_id(), std::get<0>(prov[0]));
             }
         }
+        g_print("Inserting service_id:provider_id data\n");
         db.run_statement(ins_serv_prov, serv_prov_v);
 
+        g_print("Building lcn vector\n");
         for (const auto &lp: lcn_data_)
         {
             auto ns = lp.first;
             nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xffff,
                     (ns >> 32) &0xffff, lp.second);
         }
+        g_print("Inserting lcns\n");
         db.run_statement(ins_nw_lcn, nw_lcn_v);
 
         channel_scanner_->commit_extras_to_database(db, source);

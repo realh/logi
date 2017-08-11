@@ -91,7 +91,7 @@ struct FreesatLCNPair : public SectionData
         SectionData(data, offset)
     {}
 
-    std::uint16_t lcn() const { return word16(0); }
+    std::uint16_t lcn() const { return word12(0); }
 
     std::uint16_t region_code() const { return word16(2); }
 };
@@ -182,7 +182,7 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
                     if (!rn.size())
                     {
                         rn = r.name();
-                        g_print("Discovered region %04x:%04x %s\n",
+                        g_debug("Discovered region %04x:%04x %s",
                                 current_nw_id_, r.region_code(), rn.c_str());
                     }
                 }
@@ -327,11 +327,13 @@ void FreesatChannelScanner::commit_extras_to_database(Database &db,
 {
     auto ins_reg = db.get_insert_region_statement(source);
     std::vector<std::tuple<id_t, id_t, Glib::ustring>> reg_v;
+    g_print("Building regions vector\n");
     for (const auto &reg: regions_)
     {
         const auto k = reg.first;
         reg_v.emplace_back((k >> 16) & 0xffff, k & 0xffff, reg.second);
     }
+    g_print("Inserting regions\n");
     db.run_statement(ins_reg, reg_v);
 }
 
