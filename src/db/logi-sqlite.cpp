@@ -200,12 +200,20 @@ Sqlite3Database::get_insert_service_provider_id_statement(const char *source)
             {"original_network_id", "service_id", "provider_id"}, false);
 }
 
-Database::StatementPtr<id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_network_lcn_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t>(source,
+    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
             NETWORK_LCN_TABLE,
-            {"network_id", "service_id", "lcn"});
+            {"network_id", "service_id", "region_code", "lcn"});
+}
+
+Database::StatementPtr<id_t, id_t, Glib::ustring>
+Sqlite3Database::get_insert_region_statement(const char *source)
+{
+    return build_insert_statement<id_t, id_t, Glib::ustring>(source,
+            REGION_TABLE,
+            {"bouquet_id", "region_code", "region_name"});
 }
 
 Database::StatementPtr<Glib::ustring>
@@ -308,9 +316,21 @@ void Sqlite3Database::ensure_network_lcn_table(const char *source)
     execute(build_create_table_sql(table_name, {
             {"network_id", "INTEGER"},
             {"service_id", "INTEGER"},
+            {"region_code", "INTEGER"},
             {"lcn", "INTEGER"},
         },
-        "PRIMARY KEY (network_id, lcn)"));
+        "PRIMARY KEY (network_id, region_code, lcn)"));
+}
+
+void Sqlite3Database::ensure_region_table(const char *source)
+{
+    auto table_name = build_table_name(source, REGION_TABLE);
+    execute(build_create_table_sql(table_name, {
+            {"bouquet_id", "INTEGER"},
+            {"region_code", "INTEGER"},
+            {"region_name", "TEXT"},
+        },
+        "PRIMARY KEY (bouquet_id, region_code)"));
 }
 
 void Sqlite3Database::ensure_source_table()

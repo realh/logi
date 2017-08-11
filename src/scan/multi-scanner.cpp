@@ -268,9 +268,10 @@ void MultiScanner::process_service_descriptor(std::uint16_t orig_nw_id,
 }
 
 void MultiScanner::set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
-        std::uint16_t lcn)
+        std::uint16_t region_code, std::uint16_t lcn)
 {
-    lcn_data_[(std::uint32_t(nw_id) << 16) | service_id] = lcn;
+    lcn_data_[(std::uint64_t(region_code) << 32) |
+        (std::uint64_t(nw_id) << 16) | service_id] = lcn;
 }
 
 bool MultiScanner::check_harvest()
@@ -355,7 +356,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         std::vector<std::tuple<id_t, id_t, Glib::ustring>>      serv_name_v;
         std::vector<std::tuple<Glib::ustring>>                  prov_nm_v;
         std::vector<std::tuple<id_t, id_t, id_t>>               serv_prov_v;
-        std::vector<std::tuple<id_t, id_t, id_t>>               nw_lcn_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t>>         nw_lcn_v;
 
         g_debug("Committing data");
 
@@ -372,7 +373,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
             auto tuning = ts.get_tuning();
             if (tuning)
             {
-                g_print("%s\n", tuning->linuxtv_description().c_str());
+                //g_print("%s\n", tuning->linuxtv_description().c_str());
                 auto props = tuning->get_props();
                 for (std::uint32_t n = 0; n < props->num; ++n)
                 {
@@ -440,9 +441,12 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         for (const auto &lp: lcn_data_)
         {
             auto ns = lp.first;
-            nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xffff, lp.second);
+            nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xffff,
+                    (ns >> 32) &0xffff, lp.second);
         }
         db.run_statement(ins_nw_lcn, nw_lcn_v);
+
+        channel_scanner_->commit_extras_to_database(db, source);
     });
 }
 

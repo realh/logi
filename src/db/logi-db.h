@@ -254,10 +254,16 @@ public:
     get_insert_service_provider_id_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, lcn
+     * statement args: network_id, service_id, region_code, lcn
      */
-    virtual StatementPtr<id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
     get_insert_network_lcn_statement(const char *source) = 0;
+
+    /**
+     * statement args: bouquet_id, region_code, region_name
+     */
+    virtual StatementPtr<id_t, id_t, Glib::ustring>
+    get_insert_region_statement(const char *source) = 0;
 
     virtual StatementPtr<Glib::ustring>
     get_insert_source_statement() = 0;
@@ -344,6 +350,8 @@ protected:
     virtual void ensure_service_provider_id_table(const char *source) = 0;
 
     virtual void ensure_network_lcn_table(const char *source) = 0;
+
+    virtual void ensure_region_table(const char *source) = 0;
 
     virtual void ensure_source_table() = 0;
 private:

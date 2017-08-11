@@ -15,7 +15,9 @@ which converts the database to channels.conf for VDR, or outputs a MySQL script
 for setting the channels numbers in MythTV's database.
 
 Logi uses sqlite3, the database's default location is
-`${XDG_DATA_HOME:-~/.local/share}/logi/database.sqlite`)
+`${XDG_DATA_HOME:-~/.local/share}/logi/database.sqlite`). The table structure
+is not finalised yet, so for now you should delete any existing database
+whenever you update the source code.
 
 ## Roadmap
 

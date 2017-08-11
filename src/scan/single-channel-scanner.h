@@ -87,6 +87,14 @@ public:
     };
 
     virtual CheckHarvestPolicy check_harvest_policy() const;
+
+    /**
+     * Can be overridden to add additional data to the database. This is
+     * used to add Freesat region names. The default does nothing so you don't
+     * need to chain up.
+     */
+    virtual void commit_extras_to_database(class Database &db,
+            const char *source);
 protected:
     /**
      * Can be overidden to use custom pids for the filter or disable it

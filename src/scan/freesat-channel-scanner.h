@@ -76,6 +76,9 @@ public:
     //virtual bool is_complete() const override;
 
     virtual CheckHarvestPolicy check_harvest_policy() const override;
+
+    virtual void commit_extras_to_database(class Database &db,
+            const char *source) override;
 protected:
     virtual bool get_filter_params(std::uint16_t &pid, std::uint8_t &table_id)
         override;

@@ -294,4 +294,9 @@ bool SingleChannelScanner::get_filter_params(std::uint16_t &, std::uint8_t &)
     return true;
 }
 
+void SingleChannelScanner::commit_extras_to_database(class Database &,
+        const char *)
+{
+}
+
 }

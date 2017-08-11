@@ -228,8 +228,14 @@ public:
     /**
      * statement args: network_id, service_id, lcn
      */
-    virtual StatementPtr<id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t>
     get_insert_network_lcn_statement(const char *source) override;
+
+    /**
+     * statement args: bouquet_id, region_code, region_name
+     */
+    virtual StatementPtr<id_t, id_t, Glib::ustring>
+    get_insert_region_statement(const char *source) override;
 
     virtual StatementPtr<Glib::ustring>
     get_insert_source_statement() override;
@@ -254,6 +260,8 @@ protected:
 
     virtual void ensure_network_lcn_table(const char *source) override;
 
+    virtual void ensure_region_table(const char *source) override;
+
     virtual void ensure_source_table() override;
 private:
     constexpr static auto NETWORK_INFO_TABLE = "network_info";
@@ -264,6 +272,7 @@ private:
     constexpr static auto PROVIDER_NAME_TABLE = "provider_names";
     constexpr static auto SERVICE_PROVIDER_ID_TABLE = "service_provider_id";
     constexpr static auto NETWORK_LCN_TABLE = "network_lcns";
+    constexpr static auto REGION_TABLE = "regions";
     constexpr static auto SOURCE_TABLE = "sources";
 
     template<typename... Args>

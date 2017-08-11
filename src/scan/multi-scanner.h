@@ -67,8 +67,8 @@ private:
     // Key is (original_network_id << 16) | service_id
     std::map<std::uint32_t, ServiceData> service_data_;
 
-    // Key is (network_id << 16) | service_id
-    std::map<std::uint32_t, std::uint16_t> lcn_data_;
+    // Key is (region_code << 32) | (network_id << 16) | service_id
+    std::map<std::uint64_t, std::uint16_t> lcn_data_;
     // Used to avoid trying to scan the same channel more than once
     std::set<std::uint32_t> scanned_equivalences_;
 public:
@@ -131,8 +131,12 @@ public:
     void process_network_name(std::uint16_t network_id,
             const Glib::ustring &name);
 
+    /**
+     * nw_id is really bouquet_id for Freesat. Freeview does not use region
+     * codes, set to 0.
+     */
     void set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
-            std::uint16_t lcn);
+            std::uint16_t region_code, std::uint16_t lcn);
 
     /// All the work is done on the database thread, so both this scanner and
     /// the database must persist until the job is done:- use a

@@ -21,6 +21,7 @@
 
 #include <glib.h>
 
+#include "db/logi-db.h"
 #include "si/decode-string.h"
 #include "si/network-name-descriptor.h"
 #include "si/section.h"
@@ -86,7 +87,7 @@ std::vector<FreesatRegionData> FreesatRegionDescriptor::get_region_data() const
 
 struct FreesatLCNPair : public SectionData
 {
-    FreesatLCNPair(std::vector<std::uint8_t> data, unsigned offset) :
+    FreesatLCNPair(const std::vector<std::uint8_t> &data, unsigned offset) :
         SectionData(data, offset)
     {}
 
@@ -98,15 +99,15 @@ struct FreesatLCNPair : public SectionData
 class FreesatLCNData : public SectionData
 {
 public:
-    FreesatLCNData(std::vector<std::uint8_t> data, unsigned offset) :
+    FreesatLCNData(const std::vector<std::uint8_t> &data, unsigned offset) :
         SectionData(data, offset)
     {}
 
-    std::uint16_t service_id() const { return word16(2); }
+    std::uint16_t service_id() const { return word16(0); }
 
-    std::uint16_t unknown() const { return word16(4); }
+    std::uint16_t unknown() const { return word16(2); }
 
-    std::uint8_t pairs_length() const { return word8(6); }
+    std::uint8_t pairs_length() const { return word8(4); }
 
     std::vector<FreesatLCNPair> get_lcn_pairs() const;
 };
@@ -118,12 +119,32 @@ std::vector<FreesatLCNPair> FreesatLCNData::get_lcn_pairs() const
     unsigned l = pairs_length();
     while (i < l)
     {
-        v.emplace_back(data_, offset_ + 7 + i);
+        v.emplace_back(data_, offset_ + 5 + i);
         i += 4;
     }
     return v;
 }
 
+class FreesatLCNDescriptor : public Descriptor
+{
+public:
+    FreesatLCNDescriptor(const Descriptor &d) : Descriptor(d) {}
+
+    std::vector<FreesatLCNData> get_lcn_data() const;
+};
+
+std::vector<FreesatLCNData> FreesatLCNDescriptor::get_lcn_data() const
+{
+    std::vector<FreesatLCNData> v;
+    unsigned i = 0;
+    unsigned l = length();
+    while (i < l)
+    {
+        v.emplace_back(data_, offset_ + i + 2);
+        i += word8(i + 2 + 4) + 5;
+    }
+    return v;
+}
 
 void FreesatNITProcessor::process_descriptor(const Descriptor &desc)
 {
@@ -152,7 +173,7 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
         case FREESAT_REGION_TAG:
             {
                 const FreesatRegionDescriptor &d(desc);
-                std::vector<FreesatRegionData> regs = d.get_region_data();
+                auto regs = d.get_region_data();
                 for (const auto &r: regs)
                 {
                     std::uint32_t key = (current_nw_id_ << 16) |
@@ -163,6 +184,20 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
                         rn = r.name();
                         g_print("Discovered region %04x:%04x %s\n",
                                 current_nw_id_, r.region_code(), rn.c_str());
+                    }
+                }
+            }
+            break;
+        case FREESAT_LCN_TAG:
+            {
+                const FreesatLCNDescriptor &d(desc);
+                for (const auto &sd: d.get_lcn_data())
+                {
+                    auto sid = sd.service_id();
+                    for (const auto &l: sd.get_lcn_pairs())
+                    {
+                        mscanner_->set_lcn(current_nw_id_, sid, l.region_code(),
+                                l.lcn());
                     }
                 }
             }
@@ -285,6 +320,19 @@ SingleChannelScanner::CheckHarvestPolicy
 FreesatChannelScanner::check_harvest_policy() const
 {
     return SingleChannelScanner::SCAN_AT_LEAST_2;
+}
+
+void FreesatChannelScanner::commit_extras_to_database(Database &db,
+        const char *source)
+{
+    auto ins_reg = db.get_insert_region_statement(source);
+    std::vector<std::tuple<id_t, id_t, Glib::ustring>> reg_v;
+    for (const auto &reg: regions_)
+    {
+        const auto k = reg.first;
+        reg_v.emplace_back((k >> 16) & 0xffff, k & 0xffff, reg.second);
+    }
+    db.run_statement(ins_reg, reg_v);
 }
 
 }

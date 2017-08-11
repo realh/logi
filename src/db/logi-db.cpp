@@ -157,6 +157,7 @@ void Database::ensure_tables_callback(const char *source)
     ensure_provider_name_table(source);
     ensure_service_provider_id_table(source);
     ensure_network_lcn_table(source);
+    ensure_region_table(source);
 }
 
 }
