@@ -155,11 +155,14 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
                 std::vector<FreesatRegionData> regs = d.get_region_data();
                 for (const auto &r: regs)
                 {
-                    auto &rn = regions_[r.region_code()];
+                    std::uint32_t key = (current_nw_id_ << 16) |
+                        r.region_code();
+                    auto &rn = regions_[key];
                     if (!rn.size())
                     {
                         rn = r.name();
-                        g_print("Discovered region %s\n", rn.c_str());
+                        g_print("Discovered region %04x:%04x %s\n",
+                                current_nw_id_, r.region_code(), rn.c_str());
                     }
                 }
             }

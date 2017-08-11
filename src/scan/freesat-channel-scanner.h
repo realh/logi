@@ -27,7 +27,8 @@
 namespace logi
 {
 
-using FreesatRegionMap = std::map<std::uint16_t, std::string>;
+// Key is (bouquet_id << 16) | region_code
+using FreesatRegionMap = std::map<std::uint32_t, std::string>;
 
 class FreesatNITProcessor: public NITProcessor
 {
@@ -66,7 +67,7 @@ private:
     BATFilterPtr bat_filter_;
     TableTracker::Result bat_status_;
     BouquetData::MapT bouquets_;
-    std::map<std::uint16_t, std::string> regions_;
+    FreesatRegionMap regions_;
 public:
     virtual void start(MultiScanner *multi_scanner) override;
 
