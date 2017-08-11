@@ -144,8 +144,8 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
             if (!network_name_.size())
             {
                 network_name_ = NetworkNameDescriptor(desc).get_network_name();
-                g_print("Discovered bouquet %d %s\n",
-                        current_nw_id_, network_name_.c_str());
+                g_debug("Discovered bouquet %d (%04x) %s",
+                        current_nw_id_, current_nw_id_, network_name_.c_str());
                 mscanner_->process_network_name(current_nw_id_, network_name_);
             }
             break;
@@ -279,6 +279,12 @@ void FreesatChannelScanner::bat_filter_cb(int reason,
         if (filter_trackers_complete())
             finished(any_complete());
     }
+}
+
+SingleChannelScanner::CheckHarvestPolicy
+FreesatChannelScanner::check_harvest_policy() const
+{
+    return SingleChannelScanner::SCAN_AT_LEAST_2;
 }
 
 }

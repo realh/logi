@@ -67,6 +67,26 @@ public:
     virtual void cancel();
 
     virtual bool is_complete() const;
+
+    enum CheckHarvestPolicy {
+        /* Each TS in Freesat carries data for all other streams but not itself,
+         * so we need to scan 2 of them to get a complete dataset.
+         */
+        SCAN_AT_LEAST_2 = 1,
+
+        /* In Freeview we need to scan all transports the SI refers to in order
+         * to get service names.
+         */
+        SCAN_ALL_DISCOVERED_TS = 2,
+
+        /* Freeview's DVB-T2 multiplexes don't get described in DVB-T NIT so
+         * continuing scan until all referenced services are discovered is
+         * another way we can check for completeness.
+         */
+        FIND_ALL_SERVICES = 4
+    };
+
+    virtual CheckHarvestPolicy check_harvest_policy() const;
 protected:
     /**
      * Can be overidden to use custom pids for the filter or disable it

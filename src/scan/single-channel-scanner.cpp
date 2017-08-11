@@ -283,6 +283,12 @@ bool SingleChannelScanner::is_complete() const
     return successful_;
 }
 
+SingleChannelScanner::CheckHarvestPolicy
+SingleChannelScanner::check_harvest_policy() const
+{
+    return SCAN_ALL_DISCOVERED_TS;
+}
+
 bool SingleChannelScanner::get_filter_params(std::uint16_t &, std::uint8_t &)
 {
     return true;
