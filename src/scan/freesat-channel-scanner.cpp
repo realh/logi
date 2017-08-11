@@ -33,18 +33,28 @@ namespace logi
 class FreesatRegionData : public SectionData
 {
 public:
-    FreesatRegionData(const SectionData &sec, unsigned offset) :
-        SectionData(sec.get_data(), offset)
+    FreesatRegionData(const std::vector<std::uint8_t> &data, unsigned offset) :
+        SectionData(data, offset)
     {}
 
-    std::uint16_t region_code() const { return word16(0); }
+    FreesatRegionData(const FreesatRegionData &fr) : SectionData(fr)
+    {}
+
+    std::uint16_t region_code() const
+    {
+        return word16(0);
+    }
 
     std::uint32_t language() const { return word24(2); }
 
-    std::uint8_t name_length() const { return word8(5); }
+    std::uint8_t name_length() const
+    {
+        return word8(5);
+    }
 
     std::string name() const
     {
+        name_length();
         return decode_string(data_, offset_ + 6, name_length());
     }
 };
@@ -63,10 +73,12 @@ std::vector<FreesatRegionData> FreesatRegionDescriptor::get_region_data() const
     std::vector<FreesatRegionData> v;
     unsigned i = 0;
     unsigned l = length();
+
+    i = 0;
     while (i < l)
     {
         v.emplace_back(data_, offset_ + 2 + i);
-        i += word8(offset_ + 2 + i + 5) + 6;
+        i += word8(2 + i + 5) + 6;
     }
     return v;
 }
@@ -74,8 +86,8 @@ std::vector<FreesatRegionData> FreesatRegionDescriptor::get_region_data() const
 
 struct FreesatLCNPair : public SectionData
 {
-    FreesatLCNPair(const SectionData &sec, unsigned offset) :
-        SectionData(sec.get_data(), offset)
+    FreesatLCNPair(std::vector<std::uint8_t> data, unsigned offset) :
+        SectionData(data, offset)
     {}
 
     std::uint16_t lcn() const { return word16(0); }
@@ -86,8 +98,8 @@ struct FreesatLCNPair : public SectionData
 class FreesatLCNData : public SectionData
 {
 public:
-    FreesatLCNData(const SectionData &sec, unsigned offset) :
-        SectionData(sec.get_data(), offset)
+    FreesatLCNData(std::vector<std::uint8_t> data, unsigned offset) :
+        SectionData(data, offset)
     {}
 
     std::uint16_t service_id() const { return word16(2); }
@@ -135,6 +147,21 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
                 g_print("Discovered bouquet %d %s\n",
                         current_nw_id_, network_name_.c_str());
                 mscanner_->process_network_name(current_nw_id_, network_name_);
+            }
+            break;
+        case FREESAT_REGION_TAG:
+            {
+                const FreesatRegionDescriptor &d(desc);
+                std::vector<FreesatRegionData> regs = d.get_region_data();
+                for (const auto &r: regs)
+                {
+                    auto &rn = regions_[r.region_code()];
+                    if (!rn.size())
+                    {
+                        rn = r.name();
+                        g_print("Discovered region %s\n", rn.c_str());
+                    }
+                }
             }
             break;
     }
@@ -207,7 +234,7 @@ std::unique_ptr<NITProcessor> FreesatChannelScanner::new_nit_processor()
 
 std::unique_ptr<NITProcessor> FreesatChannelScanner::new_bat_processor()
 {
-    return std::unique_ptr<NITProcessor>(new FreesatBATProcessor());
+    return std::unique_ptr<NITProcessor>(new FreesatBATProcessor(regions_));
 }
 
 bool FreesatChannelScanner::filter_trackers_complete() const

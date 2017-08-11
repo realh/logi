@@ -27,9 +27,10 @@
 namespace logi
 {
 
+using FreesatRegionMap = std::map<std::uint16_t, std::string>;
+
 class FreesatNITProcessor: public NITProcessor
 {
-public:
 protected:
     virtual void process_descriptor(const Descriptor &desc);
 };
@@ -37,8 +38,16 @@ protected:
 class FreesatBATProcessor: public NITProcessor
 {
 public:
+    FreesatBATProcessor(FreesatRegionMap &rmap) : regions_(rmap)
+    {}
 protected:
     virtual void process_descriptor(const Descriptor &desc);
+private:
+    constexpr static std::uint8_t FREESAT_LCN_TAG = 0xD3;
+    constexpr static std::uint8_t FREESAT_REGION_TAG = 0xD4;
+    constexpr static std::uint32_t FREESAT_PRIVATE_DATA_SPECIFIER = 0x46534154;
+
+    FreesatRegionMap &regions_;
 };
 
 /**
@@ -52,15 +61,12 @@ private:
     constexpr static std::uint16_t FS_BAT_PID = 3841;
     constexpr static std::uint16_t FS_SDT_PID = 3841;
 
-    constexpr static std::uint8_t FREESAT_LCN_TAG = 0xD3;
-    constexpr static std::uint8_t FREESAT_REGION_TAG = 0xD4;
-    constexpr static std::uint32_t FREESAT_PRIVATE_DATA_SPECIFIER = 0x46534154;
-
     using BATFilterPtr = 
         std::unique_ptr<SectionFilter<NITSection, FreesatChannelScanner>>;
     BATFilterPtr bat_filter_;
     TableTracker::Result bat_status_;
     BouquetData::MapT bouquets_;
+    std::map<std::uint16_t, std::string> regions_;
 public:
     virtual void start(MultiScanner *multi_scanner) override;
 
