@@ -46,6 +46,13 @@ TableTracker::Result TableTracker::track(const Section &sec)
         {
             return REPEAT;
         }
+        complete_ = true;
+    }
+    else if (result == COMPLETE)
+    {
+        // COMPLETE means only one table is complete, so wait until we get a
+        // REPEAT_COMPLETE and check whether all tables are complete.
+        result = OK;
     }
     return result;
 }
@@ -95,10 +102,11 @@ TableTracker::Result TableTracker::track_for_id(const Section &sec)
         tab.completeness[sec.section_number()] = true;
     }
 
-    complete_ = std::all_of(tab.completeness.begin(), tab.completeness.end(),
+    tab.all_complete = std::all_of(tab.completeness.begin(),
+            tab.completeness.end(),
             [](bool t)->bool { return t; });
 
-    return complete_ ? COMPLETE : result;
+    return tab.all_complete ? COMPLETE : result;
 }
 
 }

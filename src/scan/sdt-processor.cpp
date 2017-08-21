@@ -33,6 +33,12 @@ SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
     mscanner_ = ms;
     auto result = tracker_.track(*sec);
 
+    g_print("%02x SDT section %d %d/%d for orig_nw_id %d, len %d\n",
+            sec->table_id(), sec->section_id(),
+            sec->section_number(), sec->last_section_number(),
+            sec->original_network_id(),
+            sec->section_length());
+
     switch (result)
     {
         case TableTracker::REPEAT:
@@ -57,18 +63,12 @@ SDTProcessor::process(std::shared_ptr<SDTSection> sec, MultiScanner *ms)
     g_print("********\n");
     */
 
-    g_debug("%02x SDT section %d/%d for orig_nw_id %d, len %d",
-            sec->table_id(),
-            sec->section_number(), sec->last_section_number(),
-            sec->original_network_id(),
-            sec->section_length());
-
     current_orig_nw_id_ = sec->original_network_id();
     current_ts_id_ = sec->transport_stream_id();
 
     auto services = sec->get_services();
 
-    g_debug("%ld services", services.size());
+    g_print("%ld services\n", services.size());
     for (auto &svc: services)
     {
         process_service_data(svc);

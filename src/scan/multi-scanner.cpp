@@ -426,9 +426,9 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         // service_provider_names
         g_print("Inserting provider names\n");
         db.run_statement(ins_prov_nm, prov_nm_v);
-        g_print("Inserting service ids\n");
+        g_print("Inserting %ld service ids\n", serv_id_v.size());
         db.run_statement(ins_serv_id, serv_id_v);
-        g_print("Inserting service names\n");
+        g_print("Inserting %ld service names\n", serv_name_v.size());
         db.run_statement(ins_serv_name, serv_name_v);
         // Now read back rowids of provider names and build a vector mapping
         // service_ids to provider ids.
@@ -454,7 +454,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
             nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xffff,
                     (ns >> 32) &0xffff, lp.second);
         }
-        g_print("Inserting lcns\n");
+        g_print("Inserting %ld lcns\n", nw_lcn_v.size());
         db.run_statement(ins_nw_lcn, nw_lcn_v);
 
         channel_scanner_->commit_extras_to_database(db, source);

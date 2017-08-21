@@ -152,7 +152,7 @@ void SingleChannelScanner::nit_filter_cb(int reason,
             nit_status_ = TableTracker::OK;
     }
 
-    if (!section || nit_status_ == TableTracker::COMPLETE
+    if (!section || nit_status_ == TableTracker::REPEAT_COMPLETE
         || nit_status_ == TableTracker::ERROR)
     {
         nit_filter_->stop();
@@ -224,8 +224,7 @@ TableTracker::Result SingleChannelScanner::sdt_filter_cb(int reason,
         }
     }
 
-    if (!section || sdt_status == TableTracker::COMPLETE
-            || sdt_status == TableTracker::REPEAT_COMPLETE)
+    if (!section || sdt_status == TableTracker::REPEAT_COMPLETE)
     {
         sdt_filter->stop();
         g_debug("Testing completeness for SDT (%s ts)", label);
