@@ -1,0 +1,231 @@
+#!/usr/bin/env python
+
+"""
+Usage: fslcns [-s SOURCE] [-b BOUQUET] [-r REGION] [-d FILE]
+
+SOURCE is an optional source name. If not given the default is "Freesat".
+
+BOUQUET is an optional bouquet name. If not given the default is "England HD".
+
+REGION is an optional region name. If not given the default is
+"South/Meridian S".
+
+FILE is logi's sqlite database, usually at ~/.local/share/logi/database.sqlite
+
+Outputs a list of [lcn, service_id, "service_name"]
+"""
+
+from __future__ import print_function
+
+import argparse
+import os
+import sqlite3
+import sys
+
+
+def get_bouquet_id(conn, source, name):
+    curs = conn.cursor()
+    curs.execute("SELECT network_id FROM " + source + \
+            "_network_info WHERE name = ?", (name,))
+    return curs.fetchone()[0]
+
+
+def get_region_code(conn, source, bouquet_id, name):
+    curs = conn.cursor()
+    curs.execute("SELECT region_code FROM " + source + "_regions WHERE " + \
+            "region_name = ? AND bouquet_id = ?", (name, bouquet_id))
+    return curs.fetchone()[0]
+
+
+def get_all_lcns(conn, source):
+    curs = conn.cursor()
+    l = source + "_network_lcns"
+    curs.execute("SELECT lcn FROM %s" % l)
+    # Filter out duplicates
+    m = {}
+    for l in curs.fetchall():
+        m[l[0]] = True
+    ll = []
+    for l in m.keys():
+        ll.append(l)
+    ll.sort()
+    return ll
+
+
+def get_lcns(conn, source, bouquet_id, region_code):
+    curs = conn.cursor()
+    l = source + "_network_lcns"
+    n = source + "_service_names"
+    b = source + "_network_info"
+    r = source + "_regions"
+    curs.execute("SELECT lcn, network_id, region_code, service_id, " + \
+            "freesat_id FROM " + l +
+            " ORDER BY lcn, network_id, region_code, service_id, freesat_id")
+    data = []
+    prev = None
+    all_lcns = curs.fetchall()
+    for row in all_lcns:
+        if not prev or prev[0] != row[0] or prev[1] != row[1] \
+                or prev[2] != row[2] or prev[3] != row[3]:
+            prev = row
+            curs.execute("SELECT name FROM %s WHERE network_id = ?" % b,
+                    (row[1],))
+            bouquet_name = curs.fetchone()
+            if bouquet_name:
+                bouquet_name = bouquet_name[0]
+            else:
+                bouquet_name = str(row[1])
+            curs.execute("SELECT region_name FROM %s WHERE region_code = ?" % r,
+                    (row[2],))
+            region_name = curs.fetchone()
+            if region_name:
+                region_name = region_name[0]
+            else:
+                region_name = str(row[2])
+            curs.execute("SELECT original_network_id, name FROM " + n + \
+                    " WHERE service_id = ?", (row[3],))
+            service_names = curs.fetchall()
+            if service_names and len(service_names):
+                service_name = []
+                for s in service_names:
+                    service_name.append("%d:%s" % tuple(s))
+                    service_name = ", ".join(service_name)
+            else:
+                service_name = str(row[3])
+            data.append((row[0], row[4], bouquet_name, region_name, row[3],
+                service_name))
+    return data
+
+
+def get_lcns__(conn, source, bouquet_id, region_code):
+    curs = conn.cursor()
+    l = source + "_network_lcns"
+    n = source + "_service_names"
+    b = source + "_network_info"
+    r = source + "_regions"
+    sql = "SELECT %s.lcn, %s.name, %s.region_name, %s.service_id, %s.name " \
+            % (l, b, r, l, n)
+    sql += "FROM %s, %s, %s, %s " % (l, b, r, n)
+    sql += "WHERE %s.network_id = %s.network_id " % (l, b)
+    sql += "AND %s.region_code = %s.region_code " % (l, r)
+    sql += "AND %s.service_id = %s.service_id " % (l, n)
+    sql += "ORDER BY %s.lcn" % l
+    curs.execute(sql)
+    data = []
+    rows = curs.fetchall()
+    return rows
+    for row in rows:
+        if len(data):
+            p = data[-1]
+            if p[0] == row[0] and p[1] == row[1] and p[2] == row[2] \
+                    and p[3] == row[3] and p[4] == row[4]:
+                pass
+            else:
+                data.append(row)
+        else:
+            data.append(row)
+    return data
+
+
+def get_lcns_(conn, source, bouquet_id, region_code):
+    data = []
+    lcns = get_all_lcns(conn, source)
+    curs = conn.cursor()
+    l = source + "_network_lcns"
+    n = source + "_service_names"
+    for lcn in lcns:
+        # First try to find a matching region and bouquet
+        curs.execute(("SELECT %s.lcn, %s.service_id, " + \
+            "%s.region_code, %s.network_id, %s.name " + \
+            "FROM %s, %s " + \
+            "WHERE lcn = ? AND %s.region_code = ? AND %s.network_id = ? " + \
+            "AND %s.service_id = %s.service_id ") % \
+            (l, n, l, l, n, l, n, l, l, l, n),
+            (lcn, region_code, bouquet_id))
+        res = curs.fetchall()
+        if len(res):
+            for r in res:
+                data.append(r + ("R+B",))
+        else:
+            # Find just a matching region
+            curs.execute(("SELECT %s.lcn, %s.service_id, " + \
+                "%s.region_code, %s.network_id, %s.name " + \
+                "FROM %s, %s " + \
+                "WHERE lcn = ? AND %s.region_code = ? " + \
+                "AND %s.service_id = %s.service_id ") % \
+                (l, n, l, l, n, l, n, l, l, n),
+                (lcn, region_code))
+            res = curs.fetchall()
+            if len(res):
+                for r in res:
+                    data.append(r + ("R",))
+            else:
+                # Find just a matching bouquet
+                curs.execute(("SELECT %s.lcn, %s.service_id, " + \
+                    "%s.region_code, %s.network_id, %s.name " + \
+                    "FROM %s, %s " + \
+                    "WHERE lcn = ? AND %s.network_id = ? " + \
+                    "AND %s.service_id = %s.service_id ") % \
+                    (l, n, l, l, n, l, n, l, l, n),
+                    (lcn, bouquet_id))
+                res = curs.fetchall()
+                if len(res):
+                    for r in res:
+                        data.append(r + ("B",))
+                else:
+                    # Just the lcn
+                    curs.execute(("SELECT %s.lcn, %s.service_id, " + \
+                        "%s.region_code, %s.network_id, %s.name " + \
+                        "FROM %s, %s " + \
+                        "WHERE lcn = ? " + \
+                        "AND %s.service_id = %s.service_id ") % \
+                        (l, n, l, l, n, l, n, l, n),
+                        (lcn,))
+                    res = curs.fetchall()
+                    if len(res):
+                        for r in res:
+                            data.append(r + ("-",))
+
+    #curs.execute(("SELECT %s.lcn, %s.service_id, %s.name FROM %s, %s " + \
+    #        "WHERE (%s.network_id = ? OR %s.region_code = ?) " + \
+    #        "AND %s.service_id = %s.service_id " + \
+    #        "ORDER BY lcn") % (l, n, n, l, n, l, l, l, n),
+    #        (bouquet_id, region_code))
+    #return curs.fetchall()
+    return data
+
+
+def load_from_sqlite(filename, source, bouquet, region):
+    print("Loading " + filename)
+    conn = sqlite3.connect(filename)
+    bouquet_id = get_bouquet_id(conn, source, bouquet)
+    region_code = get_region_code(conn, source, bouquet_id, region)
+    print("Region %s=%d, bouquet %s=%d" % \
+            (region, region_code, bouquet, bouquet_id))
+    return get_lcns(conn, source, bouquet_id, region_code)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = \
+            "Show per-region+bouqet LCNs for Freesat")
+    parser.add_argument('-s', '--source', help="Source name", default="Freesat")
+    parser.add_argument('-b', '--bouquet', help="Bouquet name",
+            default="England SD")
+    parser.add_argument('-r', '--region', help="Region name",
+            default="South/Meridian S")
+    parser.add_argument('-d', '--database', 
+            help="sqlite3 database to fetch the data from")
+
+    args = parser.parse_args(sys.argv[1:])
+
+    if args.database:
+        database = args.database
+    else:
+        xdg = os.getenv("XDG_DATA_HOME") or os.path.expanduser('~/.local/share')
+        database = os.path.join(xdg, "logi", "database.sqlite3")
+
+    rows = load_from_sqlite(database, args.source, args.bouquet, args.region)
+    for r in rows:
+        #print("%4d s:%6d r:%6d b:%6d %-16s %-6s" % tuple(r))
+        #print("%4d %-16s %-24s %7d %-16s" % tuple(r))
+        print("%4d %04x %-20s %-24s %7d %-16s" % r)
