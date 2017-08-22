@@ -197,7 +197,7 @@ void FreesatBATProcessor::process_descriptor(const Descriptor &desc)
                     for (const auto &l: sd.get_lcn_pairs())
                     {
                         mscanner_->set_lcn(current_nw_id_, sid, l.region_code(),
-                                l.lcn());
+                                l.lcn(), sd.unknown());
                     }
                 }
             }

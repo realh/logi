@@ -268,9 +268,10 @@ void MultiScanner::process_service_descriptor(std::uint16_t orig_nw_id,
 }
 
 void MultiScanner::set_lcn(std::uint16_t nw_id, std::uint16_t service_id,
-        std::uint16_t region_code, std::uint16_t lcn)
+        std::uint16_t region_code, std::uint16_t lcn, std::uint16_t freesat_id)
 {
-    lcn_data_[(std::uint64_t(region_code) << 32) |
+    lcn_data_[(std::uint64_t(freesat_id) << 48) |
+        (std::uint64_t(region_code) << 32) |
         (std::uint64_t(nw_id) << 16) | service_id] = lcn;
 }
 
@@ -356,11 +357,10 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         std::vector<std::tuple<id_t, id_t, Glib::ustring>>      serv_name_v;
         std::vector<std::tuple<Glib::ustring>>                  prov_nm_v;
         std::vector<std::tuple<id_t, id_t, id_t>>               serv_prov_v;
-        std::vector<std::tuple<id_t, id_t, id_t, id_t>>         nw_lcn_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t, id_t>>   nw_lcn_v;
 
         g_print("Committing data...\n");
 
-        g_print("Building networks vector\n");
         for (const auto &nw: nw_data_)
         {
             g_debug("  Network %s", nw.second.get_network_name().c_str());
@@ -369,7 +369,6 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         g_print("Inserting networks\n");
         db.run_statement(ins_nw, nw_v);
 
-        g_print("Building transport streams vectors\n");
         for (const auto &tsp: ts_data_)
         {
             const auto &ts = tsp.second;
@@ -401,7 +400,6 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         g_print("Inserting services per transport\n");
         db.run_statement(ins_trans_serv, trans_serv_v);
 
-        g_print("Building service vectors\n");
         for (const auto &sp: service_data_)
         {
             const auto &s = sp.second;
@@ -432,7 +430,6 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         db.run_statement(ins_serv_name, serv_name_v);
         // Now read back rowids of provider names and build a vector mapping
         // service_ids to provider ids.
-        g_print("Building service_id:provider_id vector\n");
         for (const auto &sp: service_data_)
         {
             const auto &s = sp.second;
@@ -447,12 +444,11 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         g_print("Inserting service_id:provider_id data\n");
         db.run_statement(ins_serv_prov, serv_prov_v);
 
-        g_print("Building lcn vector\n");
         for (const auto &lp: lcn_data_)
         {
             auto ns = lp.first;
             nw_lcn_v.emplace_back((ns >> 16) &0xffff, ns & 0xffff,
-                    (ns >> 32) &0xffff, lp.second);
+                    (ns >> 32) &0xffff, lp.second, (ns >> 48) & 0xffff);
         }
         g_print("Inserting %ld lcns\n", nw_lcn_v.size());
         db.run_statement(ins_nw_lcn, nw_lcn_v);

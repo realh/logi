@@ -254,9 +254,9 @@ public:
     get_insert_service_provider_id_statement(const char *source) = 0;
 
     /**
-     * statement args: network_id, service_id, region_code, lcn
+     * statement args: network_id, service_id, region_code, lcn, freesat_id
      */
-    virtual StatementPtr<id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t, id_t>
     get_insert_network_lcn_statement(const char *source) = 0;
 
     /**

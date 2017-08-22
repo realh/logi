@@ -200,12 +200,12 @@ Sqlite3Database::get_insert_service_provider_id_statement(const char *source)
             {"original_network_id", "service_id", "provider_id"}, false);
 }
 
-Database::StatementPtr<id_t, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_network_lcn_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
+    return build_insert_statement<id_t, id_t, id_t, id_t, id_t>(source,
             NETWORK_LCN_TABLE,
-            {"network_id", "service_id", "region_code", "lcn"});
+            {"network_id", "service_id", "region_code", "lcn", "freesat_id"});
 }
 
 Database::StatementPtr<id_t, id_t, Glib::ustring>
@@ -318,8 +318,9 @@ void Sqlite3Database::ensure_network_lcn_table(const char *source)
             {"service_id", "INTEGER"},
             {"region_code", "INTEGER"},
             {"lcn", "INTEGER"},
+            {"freesat_id", "INTEGER"},
         },
-        "PRIMARY KEY (network_id, region_code, lcn)"));
+        "PRIMARY KEY (network_id, region_code, lcn, freesat_id)"));
 }
 
 void Sqlite3Database::ensure_region_table(const char *source)

@@ -250,7 +250,7 @@ if __name__ == "__main__":
         database = args.database
     else:
         xdg = os.getenv("XDG_DATA_HOME") or os.path.expanduser('~/.local/share')
-        database = os.path.join(xdg, "logi", "database.sqlite")
+        database = os.path.join(xdg, "logi", "database.sqlite3")
 
     rows = load_from_sqlite(database, args.vdr,
             args.source, args.network, args.offset)

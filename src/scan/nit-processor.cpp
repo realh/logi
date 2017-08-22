@@ -131,7 +131,7 @@ void NITProcessor::process_descriptor(const Descriptor &desc)
     switch (desc.tag())
     {
         case Descriptor::NETWORK_NAME:
-            if (!network_name_.size())
+            if (true) // (!network_name_.size())
             {
                 network_name_ = NetworkNameDescriptor(desc).get_network_name();
                 g_print("Discovered network %d %s\n",

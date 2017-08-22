@@ -228,7 +228,7 @@ public:
     /**
      * statement args: network_id, service_id, lcn
      */
-    virtual StatementPtr<id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t, id_t>
     get_insert_network_lcn_statement(const char *source) override;
 
     /**
