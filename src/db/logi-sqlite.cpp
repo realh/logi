@@ -216,6 +216,13 @@ Sqlite3Database::get_insert_region_statement(const char *source)
             {"bouquet_id", "region_code", "region_name"});
 }
 
+Database::StatementPtr<id_t, id_t, id_t>
+Sqlite3Database::get_insert_client_lcn_statement(const char *source)
+{
+    return build_insert_statement<id_t, id_t, id_t>(source,
+            CLIENT_LCN_TABLE, {"lcn", "original_network_id", "service_id"});
+}
+
 Database::StatementPtr<Glib::ustring>
 Sqlite3Database::get_insert_source_statement()
 {
@@ -229,6 +236,23 @@ Sqlite3Database::get_provider_id_query(const char *source)
     return build_query<Vector<id_t>, Glib::ustring>
         (source, PROVIDER_NAME_TABLE, {"provider_name"},
         "provider_name = ?");
+}
+
+Database::QueryPtr<Database::Vector<id_t>, void>
+Sqlite3Database::get_network_lcns_query(const char *source)
+{
+    return build_query<Vector<id_t>, void>
+        (source, NETWORK_LCN_TABLE, {"lcn"}, nullptr, "lcn");
+}
+
+// result fields: network_id, service_id, region_code
+Database::QueryPtr<Database::Vector<id_t, id_t, id_t>, id_t>
+Sqlite3Database::get_ids_for_network_lcn_query(const char *source)
+{
+    return build_query<Vector<id_t, id_t, id_t>, id_t>
+        (source, NETWORK_LCN_TABLE,
+        {"network_id", "service_id", "region_code"},
+        "lcn = ?");
 }
 
 void Sqlite3Database::ensure_network_info_table(const char *source)
@@ -334,6 +358,17 @@ void Sqlite3Database::ensure_region_table(const char *source)
         "PRIMARY KEY (bouquet_id, region_code)"));
 }
 
+void Sqlite3Database::ensure_client_lcn_table(const char *source)
+{
+    auto table_name = build_table_name(source, CLIENT_LCN_TABLE);
+    execute(build_create_table_sql(table_name, {
+            {"lcn", "INTEGER"},
+            {"original_network_id", "INTEGER"},
+            {"service_id", "INTEGER"},
+        },
+        "PRIMARY KEY (lcn)"));
+}
+
 void Sqlite3Database::ensure_source_table()
 {
     execute(build_create_table_sql(SOURCE_TABLE, {
@@ -382,7 +417,7 @@ Glib::ustring Sqlite3Database::build_insert_sql(const char *source,
 
 Glib::ustring Sqlite3Database::build_query_sql(const char *source,
         const char *table, const std::initializer_list<const char *> &keys,
-        const char *where)
+        const char *where, const char *order_by)
 {
     Glib::ustring s = "SELECT ";
     auto it = keys.begin();
@@ -399,6 +434,11 @@ Glib::ustring Sqlite3Database::build_query_sql(const char *source,
     {
         s += " WHERE ";
         s += where;
+    }
+    if (order_by)
+    {
+        s += " ORDER BY ";
+        s += order_by;
     }
     return s;
 }

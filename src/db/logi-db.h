@@ -45,10 +45,9 @@ public:
     template<typename... Args> using Vector = std::vector<Tuple<Args...>>;
 
     /// Result type is either void or
-    /// std::shared_ptr<std::vector<Tuple...>>>.
+    /// std::shared_ptr<std::vector<Tuple<...>>>.
     /// Input is a single row of data.
-    template<class Result, typename... Args>
-    class Query
+    template<class Result, typename... Args> class Query
     {
     public:
         using ArgsTuple = std::tuple<Args...>;
@@ -60,6 +59,15 @@ public:
 
     template<class Result, typename... Args>
     using QueryPtr = std::shared_ptr<Query<Result, Args...>>;
+
+    /// For queries with no arguments
+    template<class Result> class Query<Result, void>
+    {
+    public:
+        virtual ~Query() = default;
+
+        virtual Result query() = 0;
+    };
 
     /// An insertion/modification statement that takes multiple rows of input
     template<typename... Args>
@@ -265,11 +273,38 @@ public:
     virtual StatementPtr<id_t, id_t, Glib::ustring>
     get_insert_region_statement(const char *source) = 0;
 
+    /**
+     * statement args: lcn, original_network_id, service_id
+     */
+    virtual StatementPtr<id_t, id_t, id_t>
+    get_insert_client_lcn_statement(const char *source) = 0;
+
     virtual StatementPtr<Glib::ustring>
     get_insert_source_statement() = 0;
 
     virtual QueryPtr<Vector<id_t>, Glib::ustring>
     get_provider_id_query(const char *source) = 0;
+
+    /**
+     * result fields: lcn
+     */
+    virtual QueryPtr<Vector<id_t>, void>
+    get_network_lcns_query(const char *source) = 0;
+
+    /**
+     * result fields: network_id, service_id, region_code
+     * statement args: lcn
+     */
+    virtual QueryPtr<Vector<id_t, id_t, id_t>, id_t>
+    get_ids_for_network_lcn_query(const char *source) = 0;
+
+    /**
+     * result fields: original_network_id, transport_stream_id,
+            tuning_key, tuning_val
+     * statement args: transport_stream_id
+     */
+    virtual QueryPtr<Vector<id_t, id_t, id_t, id_t>, id_t>
+    get_transport_stream_query(const char *source) = 0;
 
     /**
      * Queues a query to be executed on the database thread. The result callback
@@ -291,7 +326,13 @@ public:
     Result run_query(QueryPtr<Result, Args...> query,
             const Tuple<Args...> &args)
     {
-        return query->query(args);;
+        return query->query(args);
+    }
+
+    template<class Result>
+    Result run_query(QueryPtr<Result, void> query)
+    {
+        return query->query();
     }
 
     /**
@@ -352,6 +393,8 @@ protected:
     virtual void ensure_network_lcn_table(const char *source) = 0;
 
     virtual void ensure_region_table(const char *source) = 0;
+
+    virtual void ensure_client_lcn_table(const char *source) = 0;
 
     virtual void ensure_source_table() = 0;
 private:

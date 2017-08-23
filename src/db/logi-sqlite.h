@@ -178,6 +178,30 @@ private:
             return fetch_rows(v);
         }
     };
+
+    /// Query with no arguments
+    template<class Result>
+    class Sqlite3Query<Result, void> :
+    public Query<Result, void>, Sqlite3StatementBase
+    {
+    public:
+        using Parent = Query<Result, void>;
+
+        Sqlite3Query(sqlite3 *db, const char *sql) :
+            Sqlite3StatementBase(db, sql)
+        {}
+
+        Sqlite3Query(sqlite3 *db, const Glib::ustring &sql) :
+            Sqlite3StatementBase(db, sql.c_str())
+        {}
+
+        virtual Result query() override
+        {
+            reset();
+            Result v;
+            return fetch_rows(v);
+        }
+    };
 public:
     ~Sqlite3Database();
 
@@ -237,11 +261,38 @@ public:
     virtual StatementPtr<id_t, id_t, Glib::ustring>
     get_insert_region_statement(const char *source) override;
 
+    /**
+     * statement args: lcn, original_network_id, service_id
+     */
+    virtual StatementPtr<id_t, id_t, id_t>
+    get_insert_client_lcn_statement(const char *source) override;
+
     virtual StatementPtr<Glib::ustring>
     get_insert_source_statement() override;
 
     virtual QueryPtr<Vector<id_t>, Glib::ustring>
     get_provider_id_query(const char *source) override;
+
+    /**
+     * result fields: lcn
+     */
+    virtual QueryPtr<Vector<id_t>, void>
+    get_network_lcns_query(const char *source) override;
+
+    /**
+     * result fields: network_id, service_id, region_code
+     * statement args: lcn
+     */
+    virtual QueryPtr<Vector<id_t, id_t, id_t>, id_t>
+    get_ids_for_network_lcn_query(const char *source) override;
+
+    /**
+     * result fields: original_network_id, transport_stream_id,
+            tuning_key, tuning_val
+     * statement args: transport_stream_id
+     */
+    virtual QueryPtr<Vector<id_t, id_t, id_t, id_t>, id_t>
+    get_transport_stream_query(const char *source) override;
 protected:
     virtual void ensure_network_info_table(const char *source) override;
 
@@ -262,6 +313,8 @@ protected:
 
     virtual void ensure_region_table(const char *source) override;
 
+    virtual void ensure_client_lcn_table(const char *source) override;
+
     virtual void ensure_source_table() override;
 private:
     constexpr static auto NETWORK_INFO_TABLE = "network_info";
@@ -272,6 +325,7 @@ private:
     constexpr static auto PROVIDER_NAME_TABLE = "provider_names";
     constexpr static auto SERVICE_PROVIDER_ID_TABLE = "service_provider_id";
     constexpr static auto NETWORK_LCN_TABLE = "network_lcns";
+    constexpr static auto CLIENT_LCN_TABLE = "client_lcns";
     constexpr static auto REGION_TABLE = "regions";
     constexpr static auto SOURCE_TABLE = "sources";
 
@@ -295,11 +349,13 @@ private:
     template<class Result, typename... Args>
     QueryPtr<Result, Args...> build_query(const char *source,
             const char *table, const std::initializer_list<const char *> &keys,
-            const char *where = nullptr)
+            const char *where = nullptr,
+            const char *order_by = nullptr)
     {
         return std::static_pointer_cast<Query<Result, Args...>>
             (std::make_shared<Sqlite3Query<Result, Args...>>
-                (sqlite3_, build_query_sql(source, table, keys, where)));
+                (sqlite3_,
+                 build_query_sql(source, table, keys, where, order_by)));
     }
 
     template<class Result, typename... Args>
@@ -323,7 +379,7 @@ private:
 
     static Glib::ustring build_query_sql(const char *source,
             const char *table, const std::initializer_list<const char *> &keys,
-            const char *where);
+            const char *where, const char *order_by);
 
     /// Each pair is <key, type + constraint (nullable)>
     static Glib::ustring build_create_table_sql(const std::string &name,
