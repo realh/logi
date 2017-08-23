@@ -3,6 +3,8 @@ set(LOGI_SCAN_SOURCES
     freesat-channel-scanner.cpp
     freesat-tuning-iterator.cpp
     freeview-channel-scanner.cpp
+    freeview-lcn-processor.cpp
+    lcn-processor.cpp
     multi-scanner.cpp
     nit-processor.cpp
     sdt-processor.cpp
@@ -14,6 +16,8 @@ set(LOGI_SCAN_HEADERS
     freesat-channel-scanner.h
     freesat-tuning-iterator.h
     freeview-channel-scanner.h
+    freeview-lcn-processor.h
+    lcn-processor.h
     multi-scanner.h
     nit-processor.h
     sdt-processor.h

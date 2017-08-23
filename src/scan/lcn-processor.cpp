@@ -1,4 +1,3 @@
-#pragma once
 /*
     logi - A DVB DVR designed for web-based clients.
     Copyright (C) 2017 Tony Houghton <h@realh.co.uk>
@@ -49,8 +48,21 @@ void LCNProcessor::store_names(const std::string &source,
 
 void LCNProcessor::process()
 {
-    auto q = db_.get_network_lcns_query(source_.c_str());
-    auto lcns = db_.run_query(q);
+    lcn_ids_q_ = db_.get_ids_for_network_lcn_query(source_.c_str());
+    auto qid = db_.run_query(db_.get_network_id_for_name_query(source_.c_str()),
+            {network_name_});
+    if (qid.size())
+        network_id_ = std::get<0>(qid[0]);
+    else
+        network_id_ = 0;
+    qid = db_.run_query(
+            db_.get_region_code_for_name_and_bouquet_query(source_.c_str()),
+            {region_name_, network_id_});
+    if (qid.size())
+        region_code_ = std::get<0>(qid[0]);
+    else
+        region_code_ = 0;
+    auto lcns = db_.run_query(db_.get_network_lcns_query(source_.c_str()));
     unsigned last_lcn = 0xffffffff;
     for (const auto &l: lcns)
     {

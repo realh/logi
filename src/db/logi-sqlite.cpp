@@ -255,6 +255,35 @@ Sqlite3Database::get_ids_for_network_lcn_query(const char *source)
         "lcn = ?");
 }
 
+/**
+ * result fields: network_id
+ * statement args: network name
+ */
+Database::QueryPtr<Database::Vector<id_t>, Glib::ustring>
+Sqlite3Database::get_network_id_for_name_query(const char *source)
+{
+    return build_query<Vector<id_t>, Glib::ustring>
+        (source, NETWORK_INFO_TABLE,
+        {"network_id"}, "name = ?");
+}
+
+Database::QueryPtr<Database::Vector<id_t>, Glib::ustring, id_t>
+Sqlite3Database::get_region_code_for_name_and_bouquet_query(const char *source)
+{
+    return build_query<Vector<id_t>, Glib::ustring, id_t>
+        (source, REGION_TABLE,
+        {"region_code"}, "region_name = ? AND bouquet_id = ?");
+}
+
+Database::QueryPtr<Database::Vector<id_t>, id_t, id_t>
+Sqlite3Database::get_original_network_id_for_network_and_service_id_query
+(const char *source)
+{
+    return build_query<Vector<id_t>, id_t, id_t>
+        (source, REGION_TABLE,
+        {"original_network_id"}, "network_id = ? AND service_id = ?");
+}
+
 void Sqlite3Database::ensure_network_info_table(const char *source)
 {
     auto table_name = build_table_name(source, NETWORK_INFO_TABLE);
@@ -289,6 +318,8 @@ void Sqlite3Database::ensure_transport_services_table(const char *source)
             {"service_id", "INTEGER"},
         },
         "PRIMARY KEY (original_network_id, service_id)"));
+    execute(build_create_index_sql(table_name, table_name + '_' + "index",
+                "(network_id, service_id)"));
 }
 
 void Sqlite3Database::ensure_service_id_table(const char *source)

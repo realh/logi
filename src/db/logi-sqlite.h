@@ -287,12 +287,26 @@ public:
     get_ids_for_network_lcn_query(const char *source) override;
 
     /**
-     * result fields: original_network_id, transport_stream_id,
-            tuning_key, tuning_val
-     * statement args: transport_stream_id
+     * result fields: network_id
+     * statement args: network name
      */
-    virtual QueryPtr<Vector<id_t, id_t, id_t, id_t>, id_t>
-    get_transport_stream_query(const char *source) override;
+    virtual QueryPtr<Vector<id_t>, Glib::ustring>
+    get_network_id_for_name_query(const char *source) override;
+
+    /**
+     * result fields: region_code
+     * statement args: region name, bouquet_id
+     */
+    virtual QueryPtr<Vector<id_t>, Glib::ustring, id_t>
+    get_region_code_for_name_and_bouquet_query(const char *source) override;
+
+    /**
+     * result fields: original_network_id
+     * statement args: network_id, service_id
+     */
+    virtual QueryPtr<Vector<id_t>, id_t, id_t>
+    get_original_network_id_for_network_and_service_id_query(const char *source)
+    override;
 protected:
     virtual void ensure_network_info_table(const char *source) override;
 

@@ -25,8 +25,8 @@ namespace logi
 
 class LCNProcessor
 {
-private:
-    using id_t = std::uint16_t;
+protected:
+    using id_t = std::uint32_t;
 public:
     LCNProcessor(Database &db) : db_(db)
     {}
@@ -51,18 +51,20 @@ public:
             sigc::slot<void> callback);
 protected:
     virtual void process_lcn(id_t lcn) = 0;
-private:
+
     void process();
 
     void store_names(const std::string &source,
             const std::string &network_name, const std::string &region_name);
 
     Database &db_;
-    std::string source_;
-    std::string network_name_;
-    std::string region_name_;
+    Glib::ustring source_;
+    Glib::ustring network_name_;
+    Glib::ustring region_name_;
     id_t network_id_;
     id_t region_code_;
+    Database::QueryPtr<Database::Vector<id_t, id_t, id_t>, id_t> lcn_ids_q_;
+    std::vector<std::tuple<id_t, id_t, id_t>> client_lcns_v_;
 };
 
 }
