@@ -24,6 +24,7 @@ namespace logi
 
 void FreeviewLCNProcessor::process_lcn(id_t lcn)
 {
+    //g_print("LCN %d\n", lcn);
     auto lcn_ids = db_.run_query(lcn_ids_q_, {lcn});
     if (!lcn_ids.size())
     {

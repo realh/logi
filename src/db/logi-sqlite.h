@@ -294,6 +294,12 @@ public:
     get_network_id_for_name_query(const char *source) override;
 
     /**
+     * result fields: network_id, name
+     */
+    virtual QueryPtr<Vector<id_t, Glib::ustring>, void>
+    get_all_network_ids_query(const char *source) override;
+
+    /**
      * result fields: region_code
      * statement args: region name, bouquet_id
      */

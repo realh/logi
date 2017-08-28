@@ -336,7 +336,7 @@ void MultiScanner::process_network_name(std::uint16_t network_id,
 
 void MultiScanner::commit_to_database(Database &db, const char *source)
 {
-    db.queue_callback([this, &db, source]()
+    db.queue_function([this, &db, source]()
     {
         auto ins_nw = db.get_insert_network_info_statement(source);
         auto ins_tuning = db.get_insert_tuning_statement(source);

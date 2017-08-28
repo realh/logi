@@ -147,7 +147,7 @@ void SingleChannelScanner::nit_filter_cb(int reason,
     {
         nd->nit_complete = nd->nit_proc->process(section, multi_scanner_);
         if (nd->nit_complete)
-            nit_status_ = TableTracker::COMPLETE;
+            nit_status_ = TableTracker::REPEAT_COMPLETE;
         else if (nit_status_ == TableTracker::BLANK)
             nit_status_ = TableTracker::OK;
     }
@@ -255,18 +255,22 @@ bool SingleChannelScanner::filter_trackers_complete() const
             nit_status_ != TableTracker::REPEAT_COMPLETE &&
             nit_status_ != TableTracker::ERROR)
     {
+        g_debug("Not complete because nit_status = %d", nit_status_);
         return false;
     }
     if (this_sdt_filter_ && this_sdt_status_ != TableTracker::COMPLETE &&
             this_sdt_status_ != TableTracker::REPEAT_COMPLETE &&
             this_sdt_status_ == TableTracker::ERROR)
     {
+        g_debug("Not complete because this_sdt_status = %d", this_sdt_status_);
         return false;
     }
     if (other_sdt_filter_ && other_sdt_status_ != TableTracker::COMPLETE &&
             other_sdt_status_ != TableTracker::REPEAT_COMPLETE &&
             other_sdt_status_ == TableTracker::ERROR)
     {
+        g_debug("Not complete because other_sdt_status = %d",
+                other_sdt_status_);
         return false;
     }
     return true;

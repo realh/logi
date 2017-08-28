@@ -88,6 +88,11 @@ private:
     class CurriedStatementBase
     {
     public:
+        CurriedStatementBase() : id_(++index_)
+        {
+            g_debug("Creating statement %d", id_);
+        }
+
         virtual ~CurriedStatementBase() = default;
 
         virtual void execute() = 0;
@@ -95,6 +100,11 @@ private:
         virtual void forward_result() = 0;
 
         virtual bool has_result() const = 0;
+
+        int id() const { return id_; }
+    private:
+        int id_;
+        static int index_;
     };
 
     template<class Result, class... Args> class CurriedQuery :
@@ -193,6 +203,7 @@ private:
 
         virtual void execute() override
         {
+            g_print("Calling fn %p on database thread\n", callback_);
             callback_();
         }
 
@@ -297,6 +308,12 @@ public:
      */
     virtual QueryPtr<Vector<id_t, id_t, id_t>, id_t>
     get_ids_for_network_lcn_query(const char *source) = 0;
+
+    /**
+     * result fields: network_id, name
+     */
+    virtual QueryPtr<Vector<id_t, Glib::ustring>, void>
+    get_all_network_ids_query(const char *source) = 0;
 
     /**
      * result fields: network_id

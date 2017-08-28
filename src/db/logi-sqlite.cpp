@@ -40,7 +40,7 @@ Sqlite3Database::Sqlite3StatementBase::Sqlite3StatementBase
     int result = sqlite3_prepare_v2(db, sql, -1, &stmt_, nullptr);
     if (result != SQLITE_OK)
     {
-        throw Sqlite3Error(db, result,
+        throw new Sqlite3Error(db, result,
                 Glib::ustring("Error compiling SQL {") + sql + "}");
     }
 }
@@ -59,7 +59,7 @@ void Sqlite3Database::Sqlite3StatementBase::bind(int pos, std::uint32_t val)
     int result = sqlite3_bind_int(stmt_, pos, val);
     if (result != SQLITE_OK)
     {
-        throw Sqlite3Error(sqlite3_db_handle(stmt_),
+        throw new Sqlite3Error(sqlite3_db_handle(stmt_),
                 result, "Error binding SQL int");
     }
 }
@@ -71,7 +71,7 @@ void Sqlite3Database::Sqlite3StatementBase::bind(int pos,
         (stmt_, pos, val.c_str(), -1, SQLITE_TRANSIENT);
     if (result != SQLITE_OK)
     {
-        throw Sqlite3Error(sqlite3_db_handle(stmt_),
+        throw new Sqlite3Error(sqlite3_db_handle(stmt_),
                 result, "Error binding SQL string");
     }
 }
@@ -102,7 +102,7 @@ bool Sqlite3Database::Sqlite3StatementBase::step()
     }
     if (result != SQLITE_ROW && result != SQLITE_DONE)
     {
-        throw Sqlite3Error(sqlite3_db_handle(stmt_),
+        throw new Sqlite3Error(sqlite3_db_handle(stmt_),
                 result, "Error binding SQL string");
     }
     return result == SQLITE_DONE;
@@ -131,12 +131,14 @@ void Sqlite3Database::open()
         {
             Glib::ustring e = sqlite3_errmsg(sqlite3_);
             sqlite3_close(sqlite3_);
-            throw Sqlite3Error(result, Glib::ustring("Error opening database '"
+            throw new Sqlite3Error(result,
+                    Glib::ustring("Error opening database '"
                         + filename + "': " + e));
         }
         else
         {
-            throw Sqlite3Error(result, Glib::ustring("Error opening database '"
+            throw new Sqlite3Error(result,
+                    Glib::ustring("Error opening database '"
                         + filename + "'"));
         }
     }
@@ -255,16 +257,20 @@ Sqlite3Database::get_ids_for_network_lcn_query(const char *source)
         "lcn = ?");
 }
 
-/**
- * result fields: network_id
- * statement args: network name
- */
 Database::QueryPtr<Database::Vector<id_t>, Glib::ustring>
 Sqlite3Database::get_network_id_for_name_query(const char *source)
 {
     return build_query<Vector<id_t>, Glib::ustring>
         (source, NETWORK_INFO_TABLE,
         {"network_id"}, "name = ?");
+}
+
+Database::QueryPtr<Database::Vector<id_t, Glib::ustring>, void>
+Sqlite3Database::get_all_network_ids_query(const char *source)
+{
+    return build_query<Vector<id_t, Glib::ustring>, void>
+        (source, NETWORK_INFO_TABLE,
+        {"network_id", "name"});
 }
 
 Database::QueryPtr<Database::Vector<id_t>, Glib::ustring, id_t>
@@ -280,7 +286,7 @@ Sqlite3Database::get_original_network_id_for_network_and_service_id_query
 (const char *source)
 {
     return build_query<Vector<id_t>, id_t, id_t>
-        (source, REGION_TABLE,
+        (source, TRANSPORT_SERVICES_TABLE,
         {"original_network_id"}, "network_id = ? AND service_id = ?");
 }
 
@@ -413,7 +419,7 @@ void Sqlite3Database::execute(const Glib::ustring &sql)
     int result = sqlite3_prepare_v2(sqlite3_, sql.c_str(), -1, &stmt, nullptr);
     if (result != SQLITE_OK)
     {
-        throw Sqlite3Error(sqlite3_, result,
+        throw new Sqlite3Error(sqlite3_, result,
                 Glib::ustring("Error compiling SQL {") + sql + "}");
     }
     sqlite3_step(stmt);

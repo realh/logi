@@ -25,6 +25,7 @@
 #include "scan/dvbt-tuning-iterator.h"
 #include "scan/multi-scanner.h"
 #include "scan/freeview-channel-scanner.h"
+#include "scan/freeview-lcn-processor.h"
 #include "udev/udev-client.h"
 
 using namespace logi;
@@ -71,7 +72,24 @@ static Glib::RefPtr<Glib::MainLoop> main_loop;
 
 static std::shared_ptr<Sqlite3Database> database;
 
-void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
+static void lcn_fn()
+{
+    g_print("Committed SI data to database\n");
+    auto nq = database->get_all_network_ids_query("Freeview");
+    auto nws = database->run_query(nq);
+    if (!nws.size())
+    {
+        g_critical("No networks found");
+        return;
+    }
+    const auto &nn = std::get<1>(nws[0]);
+    g_print("Processing LCNs for network '%s'\n", nn.c_str());
+            
+    FreeviewLCNProcessor lp(*database);
+    lp.process("Freeview", nn, "");
+}
+
+static void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
 {
     const char *s;
 
@@ -93,10 +111,14 @@ void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     {
         // Use shared_ptr to keep db alive in its own thread
         // when we exit this scope. Scanner is kept alive in main().
+        g_print("Starting scanner commit\n");
         scanner.commit_to_database(*database, "Freeview");
+        g_print("Queueing lcn_fn %p\n", lcn_fn);
+        database->queue_function(lcn_fn);
+        g_print("Queueing final callback\n");
         database->queue_callback([]()
         {
-            g_print("Committed all data to database\n");
+            g_print("Final callback called\n");
             database.reset();
             main_loop->quit();
         });

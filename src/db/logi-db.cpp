@@ -89,20 +89,34 @@ void Database::thread_main()
         cv_.wait(lk);
         while (statement_queue_.size())
         {
+            g_debug("Statement queue has %ld remaining items",
+                    statement_queue_.size());
             auto stmt = statement_queue_.front();
             statement_queue_.pop();
+            g_debug("Popped stmt %d, ", stmt->id());
+            if (statement_queue_.size())
+            {
+                g_debug("next %d, last %d",
+                        statement_queue_.front()->id(),
+                        statement_queue_.back()->id());
+            }
+            else
+            {
+                g_debug("no more items in queue");
+            }
             lk.unlock();
             try
             {
                 stmt->execute();
             }
+            catch (std::exception *x)
+            {
+                g_critical("Error on database thread: %s", x->what());
+                delete x;
+            }
             catch (std::exception &x)
             {
-                Glib::signal_idle().connect([x]()->bool
-                {
-                    g_critical("Database error: %s", x.what());
-                    return false;
-                });
+                g_critical("Error on database thread: %s", x.what());
             }
             lk.lock();
             if (stmt->has_result())
@@ -160,5 +174,7 @@ void Database::ensure_tables_callback(const char *source)
     ensure_region_table(source);
     ensure_client_lcn_table(source);
 }
+
+int Database::CurriedStatementBase::index_ = 0;
 
 }
