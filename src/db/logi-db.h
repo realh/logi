@@ -203,7 +203,7 @@ private:
 
         virtual void execute() override
         {
-            g_print("Calling fn %p on database thread\n", callback_);
+            //g_print("Calling fn %p on database thread\n", callback_);
             callback_();
         }
 
@@ -237,9 +237,10 @@ public:
         get_insert_network_info_statement(const char *source) = 0;
 
     /**
-     * statement args: orig_nw_id, ts_id, tuning prop key, tuning prop value
+     * statement args: orig_nw_id, ts_id, nw_id,
+     * tuning prop key, tuning prop value
      */
-    virtual StatementPtr<id_t, id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t, id_t>
         get_insert_tuning_statement(const char *source) = 0;
 
     /**
@@ -285,9 +286,11 @@ public:
     get_insert_region_statement(const char *source) = 0;
 
     /**
-     * statement args: lcn, original_network_id, service_id
+     * statement args: lcn, original_network_id, service_id,
+     * region_code, freesat_id
+     * (last two 0 for Freeview)
      */
-    virtual StatementPtr<id_t, id_t, id_t>
+    virtual StatementPtr<id_t, id_t, id_t, id_t, id_t>
     get_insert_client_lcn_statement(const char *source) = 0;
 
     virtual StatementPtr<Glib::ustring>

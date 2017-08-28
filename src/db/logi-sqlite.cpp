@@ -152,12 +152,12 @@ Sqlite3Database::get_insert_network_info_statement(const char *source)
             {"network_id", "name"});
 }
 
-Database::StatementPtr<id_t, id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_tuning_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t, id_t>(source,
+    return build_insert_statement<id_t, id_t, id_t, id_t, id_t>(source,
             TUNING_TABLE,
-            {"original_network_id", "transport_stream_id",
+            {"original_network_id", "transport_stream_id", "network_id",
             "tuning_key", "tuning_val"});
 }
 
@@ -218,11 +218,12 @@ Sqlite3Database::get_insert_region_statement(const char *source)
             {"bouquet_id", "region_code", "region_name"});
 }
 
-Database::StatementPtr<id_t, id_t, id_t>
+Database::StatementPtr<id_t, id_t, id_t, id_t, id_t>
 Sqlite3Database::get_insert_client_lcn_statement(const char *source)
 {
-    return build_insert_statement<id_t, id_t, id_t>(source,
-            CLIENT_LCN_TABLE, {"lcn", "original_network_id", "service_id"});
+    return build_insert_statement<id_t, id_t, id_t, id_t, id_t>(source,
+            CLIENT_LCN_TABLE, {"lcn", "original_network_id", "service_id",
+            "region_code", "freesat_id"});
 }
 
 Database::StatementPtr<Glib::ustring>
@@ -306,6 +307,7 @@ void Sqlite3Database::ensure_tuning_table(const char *source)
     execute(build_create_table_sql(table_name, {
             {"original_network_id", "INTEGER"},
             {"transport_stream_id", "INTEGER"},
+            {"network_id", "INTEGER"},
             {"tuning_key", "INTEGER"},
             {"tuning_val", "INTEGER"},
         },
@@ -402,6 +404,8 @@ void Sqlite3Database::ensure_client_lcn_table(const char *source)
             {"lcn", "INTEGER"},
             {"original_network_id", "INTEGER"},
             {"service_id", "INTEGER"},
+            {"region_code", "INTEGER" },
+            {"freesat_id", "INTEGER"},
         },
         "PRIMARY KEY (lcn)"));
 }

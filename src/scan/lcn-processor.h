@@ -64,7 +64,7 @@ protected:
     id_t network_id_;
     id_t region_code_;
     Database::QueryPtr<Database::Vector<id_t, id_t, id_t>, id_t> lcn_ids_q_;
-    std::vector<std::tuple<id_t, id_t, id_t>> client_lcns_v_;
+    std::vector<std::tuple<id_t, id_t, id_t, id_t, id_t>> client_lcns_v_;
 };
 
 }

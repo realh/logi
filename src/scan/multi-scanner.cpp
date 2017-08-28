@@ -351,7 +351,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
         auto query_prov_id = db.get_provider_id_query(source);
 
         std::vector<std::tuple<id_t, Glib::ustring>>            nw_v;
-        std::vector<std::tuple<id_t, id_t, id_t, id_t>>         tuning_v;
+        std::vector<std::tuple<id_t, id_t, id_t, id_t, id_t >>  tuning_v;
         std::vector<std::tuple<id_t, id_t, id_t, id_t>>         trans_serv_v;
         std::vector<std::tuple<id_t, id_t, id_t, id_t, id_t>>   serv_id_v;
         std::vector<std::tuple<id_t, id_t, Glib::ustring>>      serv_name_v;
@@ -382,6 +382,7 @@ void MultiScanner::commit_to_database(Database &db, const char *source)
                     const auto &prop = props->props[n];
                     tuning_v.emplace_back(ts.get_original_network_id(),
                             ts.get_transport_stream_id(),
+                            ts.get_network_id(),
                             prop.cmd, prop.u.data);
                 }
             }

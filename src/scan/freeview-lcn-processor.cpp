@@ -48,7 +48,7 @@ void FreeviewLCNProcessor::process_lcn(id_t lcn)
         return;
     }
     client_lcns_v_.emplace_back(lcn,
-            std::get<0>(onwr[0]), std::get<1>(lcn_ids[0]));
+            std::get<0>(onwr[0]), std::get<1>(lcn_ids[0]), 0, 0);
 }
 
 }

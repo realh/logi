@@ -90,6 +90,7 @@ def load_from_sqlite(filename, vdr = False,
     tut = source + '_tuning'
     nit = source + '_network_info'
     nlt = source + '_network_lcns'
+    clt = source + '_client_lcns'
     tst = source + '_transport_services'
     snt = source + '_service_names'
     sit = source + '_service_ids'
@@ -113,41 +114,59 @@ def load_from_sqlite(filename, vdr = False,
             if t is None:
                 t = {}
                 tunings[key] = t
-            t[row[2]] = row[3]
+            t[row[3]] = row[4]
         for key in tunings.keys():
             props = tunings[key]
             tunings[key] = (props[DTV_FREQUENCY], tuning_to_vdr(props))
 
     # Services
+    # For Freesat, most network_id fields are actually bouquet_id,
+    # so we need real network_id from tuning table
     if vdr:
         sel = 'SELECT %s.lcn, %s.original_network_id, ' \
                 '%s.network_id, %s.service_id, ' \
                 '%s.transport_stream_id, %s.free_ca_mode, %s.name' \
-                % (nlt, tst, tst, tst, tst, sit, snt)
-        frm = ' FROM %s, %s, %s, %s' % (nlt, tst, sit, snt)
-        whr = ' WHERE %s.network_id = %s.network_id' \
-                ' AND %s.service_id = %s.service_id' \
-                ' AND %s.service_id = %s.service_id' \
+                % (clt, clt, tut, clt, sit, sit, snt)
+        frm = ' FROM %s, %s, %s, %s' % (clt, tut, sit, snt)
+        whr = ' WHERE %s.service_id = %s.service_id' \
                 ' AND %s.original_network_id = %s.original_network_id' \
                 ' AND %s.service_id = %s.service_id' \
                 ' AND %s.original_network_id = %s.original_network_id' \
-                % (nlt, tst, nlt, tst, tst, sit, tst, sit, sit, snt, sit, snt)
+                ' AND %s.original_network_id = %s.original_network_id' \
+                ' AND %s.transport_stream_id = %s.transport_stream_id' \
+                ' AND %s.tuning_key = %d' \
+                % (clt, sit, clt, sit, clt, snt, clt, snt,
+                        clt, tut, sit, tut,
+                        tut, DTV_FREQUENCY) # makes sure we get a unique
+                                            # result from tuning table
     else:
         sel = 'SELECT %s.lcn, %s.service_id, ' \
                 '%s.transport_stream_id, %s.network_id' \
-                % (nlt, tst, tst, tst)
-        frm = ' FROM %s, %s' % (nlt, tst)
-        whr = ' WHERE %s.network_id = %s.network_id' \
-                ' AND %s.service_id = %s.service_id' \
-                % (nlt, tst, nlt, tst)
+                % (clt, sit, sit, tut)
+        frm = ' FROM %s, %s, %s' % (clt, sit, tut)
+        whr = ' WHERE %s.service_id = %s.service_id' \
+                ' AND %s.original_network_id = %s.original_network_id' \
+                ' AND %s.original_network_id = %s.original_network_id' \
+                ' AND %s.transport_stream_id = %s.transport_stream_id' \
+                ' AND %s.tuning_key = %d' \
+                % (clt, sit, clt, sit, 
+                        clt, tut, sit, tut,
+                        tut, DTV_FREQUENCY) # makes sure we get a unique
+                                            # result from tuning table
     oby = ' ORDER BY lcn'
     curs.execute(sel + frm + whr + oby)
     
+    # nlt may cause duplicate results so filter them out
+    #last_lcn = -1
     rows = []
     for row in curs.fetchall():
         row = list(row)
         if not row:
             break
+        #if row[0] == last_lcn:
+        #    continue
+        #else:
+        #    last_lcn = row[0]
         if vdr:
             # Try to get provider name
             curs.execute('SELECT provider_id, provider_name FROM %s, %s' \
@@ -207,13 +226,6 @@ def row_to_mythtv(row):
             "WHERE serviceid = %d AND mplexid = " \
             "(SELECT mplexid FROM dtv_multiplex WHERE transportid = %d);" \
             % tuple(row[:3]))
-    print("-- No adverts in BBC")
-    print("UPDATE channel SET commmethod=-2 " \
-            "WHERE name LIKE '%BBC%' OR name LIKE 'CBeebies%';")
-    print("-- Default channel setting")
-    print("UPDATE settings SET data = " \
-            "(SELECT channum FROM channel ORDER BY channum ASC LIMIT 1) " \
-            "WHERE value='DefaultTVChannel';")
 
 
 def print_vdr(rows):
@@ -229,12 +241,19 @@ def print_vdr(rows):
 def print_myth(rows):
     for row in rows:
         print(row_to_mythtv(row))
+    print("-- No adverts in BBC")
+    print("UPDATE channel SET commmethod=-2 " \
+            "WHERE name LIKE '%BBC%' OR name LIKE 'CBeebies%';")
+    print("-- Default channel setting")
+    print("UPDATE settings SET data = " \
+            "(SELECT channum FROM channel ORDER BY channum ASC LIMIT 1) " \
+            "WHERE value='DefaultTVChannel';")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = \
             "Output VDR channels.conf or LCNs for mythtv on stdout")
-    parser.add_argument('-v', '--vdr',
+    parser.add_argument('-v', '--vdr', action='store_true',
             help="Output VDR channels.conf " \
                     "(otherwise an SQL script to set LCNs in MythTV)")
     parser.add_argument('-s', '--source', help="Source name eg Freeview")
