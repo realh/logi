@@ -35,9 +35,8 @@ void FreesatLCNProcessor::process_lcn(id_t lcn)
     }
 
     // First try to find a match for both bouquet and region
-    auto it = std::find(lcn_ids.begin(), lcn_ids.end(),
+    auto it = std::find_if(lcn_ids.begin(), lcn_ids.end(),
     // fields: network_id, service_id, region_code, freesat_id
-    //[this](const std::tuple<id_t, id_t, id_t, id_t> &lids)
     [this](const auto &lids)
     {
         return std::get<0>(lids) == network_id_ &&
@@ -47,7 +46,7 @@ void FreesatLCNProcessor::process_lcn(id_t lcn)
     // If we can't find a perfect match, 65535 seems to be a universal region
     if (it == lcn_ids.end())
     {
-        it = std::find(lcn_ids.begin(), lcn_ids.end(),
+        it = std::find_if(lcn_ids.begin(), lcn_ids.end(),
         [this](const auto &lids)
         {
             return std::get<0>(lids) == network_id_ &&
@@ -63,7 +62,7 @@ void FreesatLCNProcessor::process_lcn(id_t lcn)
     // 106/108, using a region code of 0.
     if (it == lcn_ids.end())
     {
-        it = std::find(lcn_ids.begin(), lcn_ids.end(),
+        it = std::find_if(lcn_ids.begin(), lcn_ids.end(),
         [this](const auto &lids)
         {
             return std::get<0>(lids) == network_id_ &&

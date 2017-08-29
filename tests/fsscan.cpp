@@ -18,13 +18,14 @@
 */
 
 /*
- * Finds an available DVB-T adapter and scans for Freeview.
+ * Finds an available DVB-S adapter and scans for Freesat.
  */
 
 #include "db/logi-sqlite.h"
+#include "scan/freesat-channel-scanner.h"
+#include "scan/freesat-lcn-processor.h"
 #include "scan/freesat-tuning-iterator.h"
 #include "scan/multi-scanner.h"
-#include "scan/freesat-channel-scanner.h"
 #include "udev/udev-client.h"
 
 using namespace logi;
@@ -71,6 +72,94 @@ static Glib::RefPtr<Glib::MainLoop> main_loop;
 
 static std::shared_ptr<Sqlite3Database> database;
 
+static const char *bouquet_name;
+static const char *region_name;
+
+static bool check_bouquet_name(const char *nm,
+        const std::vector<std::tuple<std::uint32_t, Glib::ustring>> &bqs)
+{
+    for (const auto &bq: bqs)
+    {
+        if (std::get<1>(bq) == nm)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool check_region_name(const char *nm,
+        const std::vector<std::tuple<std::uint32_t, Glib::ustring>> &regs)
+{
+    for (const auto &reg: regs)
+    {
+        if (std::get<1>(reg) == nm)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void lcn_fn()
+{
+    g_print("Committed SI data to database\n");
+    auto nq = database->get_all_network_ids_query("Freesat");
+    auto bqs = database->run_query(nq);
+    if (!bqs.size())
+    {
+        g_critical("No bouquets found");
+        return;
+    }
+    if (bouquet_name)
+    {
+        if (!check_bouquet_name(bouquet_name, bqs))
+        {
+            g_critical("Bouquet '%s' not found, using 'England HD'",
+                    bouquet_name);
+            bouquet_name = nullptr;
+        }
+    }
+    if (!bouquet_name)
+    {
+        bouquet_name = "England HD";
+        if (!check_bouquet_name(bouquet_name, bqs))
+        {
+            bouquet_name = std::get<1>(bqs[0]).c_str();
+            g_critical("Bouquet 'England HD' not found, using '%s'",
+                    bouquet_name);
+        }
+    }
+
+    auto rq = database->get_regions_for_bouquet_query("Freesat");
+    auto regs = database->run_query(rq, {std::get<0>(bqs[0])});
+    if (region_name)
+    {
+        if (!check_region_name(region_name, regs))
+        {
+            g_critical("Region '%s' not found in bouquet '%s', "
+                    "using 'South/Meridian S'",
+                    region_name, bouquet_name);
+            region_name = nullptr;
+        }
+    }
+    if (!region_name)
+    {
+        region_name = "South/Meridian S";
+        if (!check_region_name(region_name, regs))
+        {
+            region_name = std::get<1>(regs[0]).c_str();
+            g_critical("Region 'South/Meridian S' not found in bouquet '%s', "
+                    "using '%s'", bouquet_name, region_name);
+        }
+    }
+
+    g_print("Processing LCNs for bouquet '%s', region '%s'\n",
+            bouquet_name, region_name);
+    FreesatLCNProcessor lp(*database);
+    lp.process("Freesat", bouquet_name, region_name);
+}
+
 void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
 {
     const char *s;
@@ -94,9 +183,9 @@ void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
         // Use shared_ptr to keep db alive in its own thread
         // when we exit this scope. Scanner is kept alive in main().
         scanner.commit_to_database(*database, "Freesat");
+        database->queue_function(lcn_fn);
         database->queue_callback([]()
         {
-            g_print("Committed all data to database\n");
             database.reset();
             main_loop->quit();
         });
@@ -112,12 +201,23 @@ void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
     std::shared_ptr<Receiver> rcv { get_receiver() };
     
     if (!rcv)
         return 1;
+
+    if (argc > 2)
+    {
+        bouquet_name = argv[1];
+        region_name = argv[2];
+    }
+    else
+    {
+        bouquet_name = nullptr;
+        region_name = nullptr;
+    }
 
     database = std::make_shared<Sqlite3Database>();
     database->start();

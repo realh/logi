@@ -282,6 +282,14 @@ Sqlite3Database::get_region_code_for_name_and_bouquet_query(const char *source)
         {"region_code"}, "region_name = ? AND bouquet_id = ?");
 }
 
+Database::QueryPtr<Database::Vector<id_t, Glib::ustring>, id_t>
+Sqlite3Database::get_regions_for_bouquet_query(const char *source)
+{
+    return build_query<Vector<id_t, Glib::ustring>, id_t>
+        (source, REGION_TABLE,
+        {"region_code", "region_name"}, "bouquet_id = ?");
+}
+
 Database::QueryPtr<Database::Vector<id_t>, id_t, id_t>
 Sqlite3Database::get_original_network_id_for_network_and_service_id_query
 (const char *source)

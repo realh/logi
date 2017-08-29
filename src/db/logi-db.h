@@ -333,6 +333,13 @@ public:
     get_region_code_for_name_and_bouquet_query(const char *source) = 0;
 
     /**
+     * result fields: region_code, region name
+     * statement args: bouquet_id
+     */
+    virtual QueryPtr<Vector<id_t, Glib::ustring>, id_t>
+    get_regions_for_bouquet_query(const char *source) = 0;
+
+    /**
      * result fields: original_network_id
      * statement args: network_id, service_id
      */

@@ -1,6 +1,7 @@
 set(LOGI_SCAN_SOURCES
     dvbt-tuning-iterator.cpp
     freesat-channel-scanner.cpp
+    freesat-lcn-processor.cpp
     freesat-tuning-iterator.cpp
     freeview-channel-scanner.cpp
     freeview-lcn-processor.cpp
@@ -14,6 +15,7 @@ set(LOGI_SCAN_SOURCES
 set(LOGI_SCAN_HEADERS
     dvbt-tuning-iterator.h
     freesat-channel-scanner.h
+    freesat-lcn-processor.h
     freesat-tuning-iterator.h
     freeview-channel-scanner.h
     freeview-lcn-processor.h

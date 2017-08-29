@@ -135,14 +135,10 @@ static void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     {
         // Use shared_ptr to keep db alive in its own thread
         // when we exit this scope. Scanner is kept alive in main().
-        g_print("Starting scanner commit\n");
         scanner.commit_to_database(*database, "Freeview");
-        g_print("Queueing lcn_fn %p\n", lcn_fn);
         database->queue_function(lcn_fn);
-        g_print("Queueing final callback\n");
         database->queue_callback([]()
         {
-            g_print("Final callback called\n");
             database.reset();
             main_loop->quit();
         });
