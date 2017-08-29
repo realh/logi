@@ -39,6 +39,26 @@ In expected order of implementation:
 
 * Kodi plugin.
 
+## Usage
+
+Currently only scanning is supported, in the form of two tools in the `tests`
+subdirectory (compiled from C++): `fvscan` for Freeview and `fsscan` for
+Freesat.
+
+`fvscan` takes one optional argument, which is the network name. Usually only
+one network is available, but you may be able to pick up signals from more than
+one transmitter. If you don't specify a network name `fvscan` uses the first it
+finds.
+
+`fsscan` takes two optional arguments, bouquet name and region name. The
+defaults are "England HD" and "South/Meridian S" respectively.
+
+In the `extras` subdirectory there is a python script called `logi-to-other`.
+After running either of the above scan tools the script can be used to either
+output a channels.conf for VDR, or an SQL script for assigning LCNs to channels
+in MythTV. For MythTV you must run itws own scanner first. Run `logi-to-other
+--help` for more information.
+
 ## Licence
 
 GPL3. The standard `COPYING` file is included.

@@ -72,6 +72,8 @@ static Glib::RefPtr<Glib::MainLoop> main_loop;
 
 static std::shared_ptr<Sqlite3Database> database;
 
+static const char *network_name;
+
 static void lcn_fn()
 {
     g_print("Committed SI data to database\n");
@@ -82,7 +84,29 @@ static void lcn_fn()
         g_critical("No networks found");
         return;
     }
-    const auto &nn = std::get<1>(nws[0]);
+    std::string nn;
+    if (network_name)
+    {
+        nn = network_name;
+        for (const auto &nw: nws)
+        {
+            if (std::get<1>(nw) == nn)
+            {
+                network_name = nullptr;
+                break;
+            }
+        }
+        if (network_name)
+        {
+            nn = std::get<1>(nws[0]);
+            g_critical("Network '%s' not found, using '%s'",
+                    network_name, nn.c_str());
+        }
+    }
+    else
+    {
+        nn = std::get<1>(nws[0]);
+    }
     g_print("Processing LCNs for network '%s'\n", nn.c_str());
             
     FreeviewLCNProcessor lp(*database);
@@ -134,12 +158,17 @@ static void finished_cb(MultiScanner &scanner, MultiScanner::Status status)
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
     std::shared_ptr<Receiver> rcv { get_receiver() };
     
     if (!rcv)
         return 1;
+
+    if (argc > 1)
+        network_name = argv[1];
+    else
+        network_name = nullptr;
 
     database = std::make_shared<Sqlite3Database>();
     database->start();

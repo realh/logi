@@ -80,7 +80,7 @@ def get_network(conn, source):
 
 
 def load_from_sqlite(filename, vdr = False,
-        source = None, network = None, offset = 0):
+        source = None, offset = 0):
     conn = sqlite3.connect(filename)
     if not source:
         source = get_source(conn)
@@ -98,9 +98,6 @@ def load_from_sqlite(filename, vdr = False,
     spt = source + '_service_provider_id'
 
     curs = conn.cursor()
-
-    curs.execute("SELECT network_id FROM %s WHERE name = ?" % nit, (network,))
-    nw_id = curs.fetchone()[0]
 
     # Transport stream tunings
     tunings = {}
@@ -178,7 +175,6 @@ def load_from_sqlite(filename, vdr = False,
             if pn and pn[0]:
                 row.append(pn[0])
             else:
-                #row.append(source + '-' + network)
                 row.append(None)
 
             # Get tuning
@@ -187,6 +183,7 @@ def load_from_sqlite(filename, vdr = False,
                 continue
             row.append(t)
 
+        row[0] += offset;
         rows.append(row)
 
     return rows
@@ -257,7 +254,6 @@ if __name__ == "__main__":
             help="Output VDR channels.conf " \
                     "(otherwise an SQL script to set LCNs in MythTV)")
     parser.add_argument('-s', '--source', help="Source name eg Freeview")
-    parser.add_argument('-n', '--network', help="Network name eg South")
     parser.add_argument('-o', '--offset', type=int, default=0,
             help="Offset for lcns (channel numbers)")
     parser.add_argument('-d', '--database', 
@@ -271,8 +267,7 @@ if __name__ == "__main__":
         xdg = os.getenv("XDG_DATA_HOME") or os.path.expanduser('~/.local/share')
         database = os.path.join(xdg, "logi", "database.sqlite3")
 
-    rows = load_from_sqlite(database, args.vdr,
-            args.source, args.network, args.offset)
+    rows = load_from_sqlite(database, args.vdr, args.source, args.offset)
     if args.vdr:
         print_vdr(rows)
     else:
