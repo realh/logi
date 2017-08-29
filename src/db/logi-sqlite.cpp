@@ -249,12 +249,12 @@ Sqlite3Database::get_network_lcns_query(const char *source)
 }
 
 // result fields: network_id, service_id, region_code
-Database::QueryPtr<Database::Vector<id_t, id_t, id_t>, id_t>
+Database::QueryPtr<Database::Vector<id_t, id_t, id_t, id_t>, id_t>
 Sqlite3Database::get_ids_for_network_lcn_query(const char *source)
 {
-    return build_query<Vector<id_t, id_t, id_t>, id_t>
+    return build_query<Vector<id_t, id_t, id_t, id_t>, id_t>
         (source, NETWORK_LCN_TABLE,
-        {"network_id", "service_id", "region_code"},
+        {"network_id", "service_id", "region_code", "freesat_id"},
         "lcn = ?");
 }
 
@@ -289,6 +289,15 @@ Sqlite3Database::get_original_network_id_for_network_and_service_id_query
     return build_query<Vector<id_t>, id_t, id_t>
         (source, TRANSPORT_SERVICES_TABLE,
         {"original_network_id"}, "network_id = ? AND service_id = ?");
+}
+
+Database::QueryPtr<Database::Vector<id_t>, id_t>
+Sqlite3Database::get_original_network_id_for_service_id_query
+(const char *source)
+{
+    return build_query<Vector<id_t>, id_t>
+        (source, SERVICE_ID_TABLE,
+        {"original_network_id"}, "service_id = ?");
 }
 
 void Sqlite3Database::ensure_network_info_table(const char *source)

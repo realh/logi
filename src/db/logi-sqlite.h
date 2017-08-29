@@ -284,10 +284,10 @@ public:
     get_network_lcns_query(const char *source) override;
 
     /**
-     * result fields: network_id, service_id, region_code
+     * result fields: network_id, service_id, region_code, freesat_id
      * statement args: lcn
      */
-    virtual QueryPtr<Vector<id_t, id_t, id_t>, id_t>
+    virtual QueryPtr<Vector<id_t, id_t, id_t, id_t>, id_t>
     get_ids_for_network_lcn_query(const char *source) override;
 
     /**
@@ -317,6 +317,13 @@ public:
     virtual QueryPtr<Vector<id_t>, id_t, id_t>
     get_original_network_id_for_network_and_service_id_query(const char *source)
     override;
+
+    /**
+     * result fields: original_network_id
+     * statement args: service_id
+     */
+    virtual QueryPtr<Vector<id_t>, id_t>
+    get_original_network_id_for_service_id_query(const char *source) override;
 protected:
     virtual void ensure_network_info_table(const char *source) override;
 

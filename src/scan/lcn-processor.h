@@ -63,7 +63,10 @@ protected:
     Glib::ustring region_name_;
     id_t network_id_;
     id_t region_code_;
-    Database::QueryPtr<Database::Vector<id_t, id_t, id_t>, id_t> lcn_ids_q_;
+    // result fields: network_id, service_id, region_code, freesat_id; arg: lcn
+    Database::QueryPtr<Database::Vector<id_t, id_t, id_t, id_t>, id_t>
+    lcn_ids_q_;
+    // fields: lcn, original_network_id, service_id, region_code, freesat_id
     std::vector<std::tuple<id_t, id_t, id_t, id_t, id_t>> client_lcns_v_;
 };
 
