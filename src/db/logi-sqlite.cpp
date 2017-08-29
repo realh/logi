@@ -248,6 +248,13 @@ Sqlite3Database::get_network_lcns_query(const char *source)
         (source, NETWORK_LCN_TABLE, {"lcn"}, nullptr, "lcn");
 }
 
+Database::QueryPtr<Database::Vector<id_t>, id_t>
+Sqlite3Database::get_lcns_for_network_query(const char *source)
+{
+    return build_query<Vector<id_t>, id_t>
+        (source, NETWORK_LCN_TABLE, {"lcn"}, "network_id = ?", "lcn");
+}
+
 // result fields: network_id, service_id, region_code
 Database::QueryPtr<Database::Vector<id_t, id_t, id_t, id_t>, id_t>
 Sqlite3Database::get_ids_for_network_lcn_query(const char *source)

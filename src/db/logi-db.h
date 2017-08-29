@@ -306,6 +306,13 @@ public:
     get_network_lcns_query(const char *source) = 0;
 
     /**
+     * result fields: lcn
+     * statement args: network_id
+     */
+    virtual QueryPtr<Vector<id_t>, id_t>
+    get_lcns_for_network_query(const char *source) = 0;
+
+    /**
      * result fields: network_id, service_id, region_code, freesat_id
      * statement args: lcn
      */

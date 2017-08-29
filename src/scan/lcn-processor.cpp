@@ -63,7 +63,8 @@ void LCNProcessor::process()
         region_code_ = std::get<0>(qid[0]);
     else
         region_code_ = 0;
-    auto lcns = db_.run_query(db_.get_network_lcns_query(src));
+    auto lcns = db_.run_query(db_.get_lcns_for_network_query(src),
+            {network_id_});
     unsigned last_lcn = 0xffffffff;
     for (const auto &l: lcns)
     {

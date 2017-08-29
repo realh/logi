@@ -57,23 +57,21 @@ void FreesatLCNProcessor::process_lcn(id_t lcn)
     // BBC 1 and 2 HD are weird, using different combinations of 101/102/106/108
     // depending on the bouquet. For "England HD" lcn 106 is assigned to
     // BBC One HD NI, Scotland or Wales variants, but not English (which is on
-    // 972). Special-case code that can deal with all bouquets would be too
-    // complicated, but we can at least make a somewhat random assignment to
-    // 106/108, using a region code of 0.
+    // 972), using region_code 0. Special-case code that can deal with all
+    // bouquets would be too complicated, but we can at least make a somewhat
+    // random assignment to 106/108. By ignoring region_code this clause can
+    // also catch other regional channels
     if (it == lcn_ids.end())
     {
         it = std::find_if(lcn_ids.begin(), lcn_ids.end(),
         [this](const auto &lids)
         {
-            return std::get<0>(lids) == network_id_ &&
-                std::get<2>(lids) == 0;
+            return std::get<0>(lids) == network_id_;
         });
     }
 
     if (it == lcn_ids.end())
     {
-        // FIXME: Rather than downgrading this to a debug I should filter
-        // all_lcns query for the target bouquet
         g_warning("No mapping for lcn '%d' in '%s'",
                 lcn, network_name_.c_str());
         return;
