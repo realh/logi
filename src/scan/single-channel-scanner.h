@@ -66,8 +66,6 @@ public:
      */
     virtual void cancel();
 
-    virtual bool is_complete() const;
-
     enum CheckHarvestPolicy {
         /* Each TS in Freesat carries data for all other streams but not itself,
          * so we need to scan 2 of them to get a complete dataset.

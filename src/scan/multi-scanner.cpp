@@ -58,11 +58,10 @@ void MultiScanner::cancel()
 
     channel_scanner_->cancel();
 
-    if (channel_scanner_->is_complete())
-        status_ = COMPLETE;
-
     if (!finished)
+    {
         finished_signal_.emit(*this, status_);
+    }
 }
 
 void MultiScanner::channel_finished(bool success)
@@ -76,20 +75,7 @@ void MultiScanner::channel_finished(bool success)
                 TransportStreamData::SCANNED : TransportStreamData::PENDING);
     }
 
-    bool complete = channel_scanner_->is_complete();
-
-    if (complete)
-    {
-        status_ = COMPLETE;
-        cancel();
-    }
-    else if (success)
-    {
-        status_ = PARTIAL;
-    }
-    
-    if (!complete)
-        next();
+    next();
 }
 
 void MultiScanner::next()
@@ -279,8 +265,10 @@ bool MultiScanner::check_harvest()
 {
     if (!ts_data_.size() || !service_data_.size())
     {
+        status_ = BLANK;
         return false;
     }
+    status_ = PARTIAL;
 
     auto policy = channel_scanner_->check_harvest_policy();
 
@@ -325,6 +313,8 @@ bool MultiScanner::check_harvest()
         */
         return false;
     }
+
+    status_ = COMPLETE;
     return true;
 }
 

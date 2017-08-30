@@ -73,8 +73,6 @@ public:
 
     virtual void cancel() override;
 
-    //virtual bool is_complete() const override;
-
     virtual CheckHarvestPolicy check_harvest_policy() const override;
 
     virtual void commit_extras_to_database(class Database &db,

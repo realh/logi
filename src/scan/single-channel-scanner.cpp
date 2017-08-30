@@ -281,11 +281,6 @@ void SingleChannelScanner::finished(bool success)
     multi_scanner_->channel_finished(success);
 }
 
-bool SingleChannelScanner::is_complete() const
-{
-    return successful_;
-}
-
 SingleChannelScanner::CheckHarvestPolicy
 SingleChannelScanner::check_harvest_policy() const
 {
