@@ -100,7 +100,6 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
 {
     Glib::ustring from_enc;
     Glib::ustring decoded;
-    std::vector<std::uint8_t> tmp;
 
     if (!len)
         return "NULL string";
@@ -146,12 +145,10 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
     else if (vec[offset] < 0x20)
     {
         offset += 1;
-        offset -= 1;
+        len -= 1;
     }
 
-    std::string s(reinterpret_cast<const char *>(
-                tmp.size() ? tmp.data() + offset : vec.data() + offset),
-                len);
+    std::string s(reinterpret_cast<const char *>(vec.data() + offset), len);
 
     if (from_enc.size())
     {
@@ -173,39 +170,6 @@ Glib::ustring decode_string(const std::vector<std::uint8_t> &vec,
         decoded = s;
     }
 
-    /* g_convert already usefully converts 0x80-0x9f to 0xc2,0x80-0x9f but we
-     * now need to check for DVB's Euro extension to ISO_6937, which we replaced
-     * with 0x90 above.
-     */
-    if (tmp.size())
-    {
-        const char *dec = decoded.data();
-        int n, m;
-        int dl = decoded.size();
-        int n_euros = 0;
-
-        for (n = 0; n < dl; ++n)
-        {
-            if ((guint8) dec[n] == 0xc2 && (guint8) dec[n + 1] == 0x90)
-                n_euros += 1;
-        }
-        auto dec2 = std::vector<char>(dl + n_euros);
-        for (m = n = 0; n < dl; ++n, ++m)
-        {
-            if ((guint8) dec[n] == 0xc2 && (guint8) dec[n + 1] == 0x90)
-            {
-                dec2[m++] = 0xe2;
-                dec2[m++] = 0x82;
-                dec2[m] = 0xac;
-                ++n;
-            }
-            else
-            {
-                dec2[m] = dec[n];
-            }
-        }
-        return Glib::ustring(dec2.begin(), dec2.end());
-    }
     return decoded;
 }
 
